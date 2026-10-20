@@ -1,0 +1,3 @@
+# Optional local multilingual image search. Tested with the existing PyTorch CPU runtime.
+transformers==5.19.0
+sentencepiece==0.2.2

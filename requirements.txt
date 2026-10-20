@@ -1,0 +1,10 @@
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+python-multipart>=0.0.18
+numpy>=1.26,<2
+Pillow>=12.3,<13
+scipy>=1.12,<1.18
+requests>=2.31,<3
+tqdm>=4.66,<5
+safetensors>=0.4,<1
+fvcore>=0.1.5

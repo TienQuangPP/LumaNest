@@ -1,0 +1,2 @@
+# Optional accelerated CPU backend; PyTorch remains the GPU/fallback backend.
+openvino==2026.4.1
