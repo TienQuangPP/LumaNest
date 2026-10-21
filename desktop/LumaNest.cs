@@ -9,7 +9,7 @@ using System.Windows.Forms;
 
 [assembly: AssemblyTitle("LumaNest")]
 [assembly: AssemblyProduct("LumaNest AI Photo Studio")]
-[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
 
 internal sealed class LumaNest : Form
 {
@@ -155,7 +155,7 @@ internal sealed class LumaNest : Form
             bool source = File.Exists(Path.Combine(root, "scripts", "launch.py")) && File.Exists(Path.Combine(root, "scripts", "bootstrap.py"))
                 && File.Exists(Path.Combine(root, "fsmart", "app.py"));
             File.WriteAllText(Path.Combine(root, "launcher-check.json"),
-                "{\"application\":\"LumaNest\",\"version\":\"1.0.0\",\"source_ready\":" + source.ToString().ToLowerInvariant() + "}");
+                "{\"application\":\"LumaNest\",\"version\":\"1.0.1\",\"source_ready\":" + source.ToString().ToLowerInvariant() + "}");
             return source ? 0 : 1;
         }
         Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);

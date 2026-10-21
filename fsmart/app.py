@@ -121,7 +121,7 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
             executor.shutdown(wait=True, cancel_futures=True)
             store.close()
 
-    app = FastAPI(title='LumaNest', version='1.0.0', lifespan=lifespan,docs_url=None,redoc_url=None)
+    app = FastAPI(title='LumaNest', version='1.0.1', lifespan=lifespan,docs_url=None,redoc_url=None)
     app.state.store, app.state.models, app.state.settings = store, models, settings
     app.state.chat = chat
     app.state.bulk = bulk

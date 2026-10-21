@@ -6,7 +6,7 @@ Thư viện ảnh AI chạy trên máy: tổ chức nhiều bộ ảnh, tìm ng�
 
 ## Mở ứng dụng trên Windows
 
-1. Tải `LumaNest-1.0.0-windows-x64.zip` trong **Releases**, giải nén toàn bộ vào thư mục bạn có quyền ghi, ví dụ `D:\LumaNest`.
+1. Tải `LumaNest-1.0.1-windows-x64.zip` trong **Releases**, giải nén toàn bộ vào thư mục bạn có quyền ghi, ví dụ `D:\LumaNest`.
 2. Mở **LumaNest.exe**. Máy đã cài môi trường: bấm **Mở ứng dụng**.
 3. Máy mới: cài **Python 3.10–3.12 x64**, chọn tính năng rồi bấm **Cài đặt / sửa môi trường**. Cần Internet và khoảng 10 GB trống khi cài đầy đủ. Không cần quyền admin cho ứng dụng.
 4. Khi cài xong, bấm **Mở ứng dụng**; trình duyệt mở `http://127.0.0.1:8000`.
