@@ -1,4 +1,4 @@
-<p align="center"><img src="fsmart/static/lumanest.svg" width="82" alt="LumaNest"></p>
+<p align="center"><img src="docs/assets/lumanest-cover.jpg" width="100%" alt="LumaNest — AI Photo Studio: Face Search, Neural Style, Local AI"></p>
 <h1 align="center">LumaNest</h1>
 <p align="center"><b>AI Photo Studio · Ảnh của bạn, không gian sáng tạo của bạn.</b></p>
 

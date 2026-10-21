@@ -13,7 +13,7 @@ FOLDERS = ('fsmart', 'scripts', 'tests', 'docs', 'desktop', '.github')
 FILES = ('README.md', 'THIRD_PARTY.md', 'SECURITY.md', 'VERSION', '.gitignore',
          '.gitattributes', 'requirements.txt', 'requirements-ml.txt', 'requirements-cpu.txt',
          'requirements-semantic.txt', 'requirements-dev.txt', 'requirements-lock.txt',
-         'run.ps1', 'setup.ps1', 'Chay-LumaNest.cmd')
+         'run.ps1', 'setup.ps1', 'Chay-LumaNest.cmd', 'docs/assets/lumanest-cover.jpg')
 SUFFIXES = {'.py', '.js', '.css', '.html', '.svg', '.ico', '.md', '.json', '.txt', '.cs', '.ps1', '.cmd', '.yml'}
 SECRET = re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,}|AIza[A-Za-z0-9_-]{35}(?![A-Za-z0-9_-])')
 
@@ -29,7 +29,7 @@ def source_files(root=None):
 
 
 def validate_file(path):
-    if path.suffix != '.ico' and SECRET.search(path.read_bytes()):
+    if path.suffix not in {'.ico', '.jpg'} and SECRET.search(path.read_bytes()):
         raise ValueError(f'Possible credential in {path.relative_to(ROOT)}; refusing to publish.')
 
 
