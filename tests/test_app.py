@@ -82,10 +82,16 @@ def test_end_to_end_album_search_style_download_and_delete(client):
     assert rendered.status_code == 200 and rendered.content.startswith(b'\x89PNG')
     assert 'attachment' in rendered.headers['content-disposition']
     assert len(client.get('/api/outputs').json()) == 1
+    preview = client.get(f"{result['image_url']}?thumbnail=true")
+    assert preview.status_code == 200 and preview.content.startswith(bytes([0xff, 0xd8]))
+    assert 'private' in preview.headers['cache-control']
     archive = client.post('/api/export', json={'photo_ids': [found[0]['id']]} )
     assert archive.content.startswith(b'PK')
     assert client.delete(f'/api/photos/{found[0]["id"]}').status_code == 200
     assert client.get(result['image_url']).status_code == 404
+    assert client.get(f"{result['image_url']}?thumbnail=true").status_code == 404
+    assert client.post('/api/trash/purge', json={'photo_ids': [found[0]['id']]}).status_code == 200
+    assert not list((client.app.state.settings.data_dir / 'output-thumbs').glob('*.jpg'))
     assert client.get(f'/api/photos/{found[0]["id"]}/image').status_code == 404
 
 

@@ -1,0 +1,21 @@
+/* Readability floor: functional text never drops below 12px, at any window width. Decorative art labels are left alone. */
+body .side-label,body .eyebrow,body .connection,body .topbar,body .topbar #breadcrumb,body .local-chip,body .command-launcher{font-size:12px}
+body .photo-info p{font-size:13px}
+body .photo-info small,body .photo-info .output-size,body .photo-select,body .photo-create,body .photo-tags span,body .photo-badge{font-size:12px}
+body .helper,body .search-controls .helper,body .advanced,body .range-caption,body .dropzone small,body .field-label,body .section-top p.muted,body .picker-status,body .studio-preview-status,body .search-notice{font-size:12.5px}
+body .library-filters label,body .collection-filter,body .collection-context label,body .collection-card-info p,body .collection-photo-count,body .section-actions select,body #reindex{font-size:12.5px}
+body .collection-tabs>button,body .nav-item,body .button,body .text-button,body .style-option,body .face-choice,body .compare-control label,body .job-panel>div{font-size:13px}
+body .empty-state p,body .page-heading p,body #canvas-placeholder p,body .canvas-top,body .image-label,body .trash-undo,body .verification-checks b{font-size:12.5px}
+body .picker-option-info b,body .picker-option-info small,body #picker-preview-detail,body .trash-card-info small,body .trash-card-actions .button,body .search-results-panel .photo-info p,body .subject-mask{font-size:12px}
+body .chat-header p,body .chat-message-label,body .chat-suggestion,body .chat-shortcuts button,body .chat-privacy,body .chat-settings p,body .chat-settings label,body .chat-settings-heading a,body .chat-modes button,body .chat-source-row label,body .chat-style-plan,body .chat-style-plan p,body .chat-style-plan label,body #gemini-config-status,body .ai-style-active{font-size:12px}
+body footer,body footer p,body .sidebar-bottom small{font-size:11px}
+body .photo-info p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Drop photos from the file manager anywhere in an open collection. */
+.drop-overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(23,63,54,.38);backdrop-filter:blur(2px);pointer-events:none}
+.drop-overlay.hidden{display:none}
+.drop-card{max-width:min(520px,86vw);padding:42px 36px;border:3px dashed #fff;border-radius:22px;background:rgba(23,63,54,.88);color:#fff;font-size:20px;font-weight:700;text-align:center;line-height:1.4}
+.drop-overlay.blocked .drop-card{background:rgba(120,52,32,.9)}
+
+/* Visible keyboard focus for people who navigate with Tab. */
+body :focus-visible{outline:3px solid #e07a4f;outline-offset:2px}

@@ -32,7 +32,7 @@ from .images import decode_image, save_photo, save_source, image_digest
 from .models import Models, ModelUnavailable
 from .store import Store, now, uid, IndexCorruptError
 from .bulk import BulkStyles
-from .assets import save_output, valid_output, file_digest
+from .assets import save_output, valid_output, file_digest, output_thumbnail, output_thumbnail_path
 from .jobs import StyleAdmission, FaceIndexQueue, AdmissionError
 from .http_guard import RequestSizeGuard
 from . import diagnostics
@@ -105,7 +105,7 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
     @asynccontextmanager
     async def lifespan(app):
         store.execute("UPDATE jobs SET status='error',message='Tác vụ tạo ảnh bị gián đoạn. Kiểm tra kết quả trước khi gửi lại; tác vụ API không tự gọi lại để tránh phát sinh phí.' WHERE status IN ('running','queued') AND kind NOT IN ('bulk-style','index','semantic-index')")
-        store.execute("UPDATE jobs SET status='error',message='Cập nhật AI bị gián đoạn. Bấm Cập nhật AI để tiếp tục phần thiếu; vector đã lưu được giữ lại.' WHERE status IN ('running','queued') AND kind='semantic-index'")
+        store.execute("UPDATE jobs SET status='error',message='Cập nhật AI bị gián đoạn. Mở mục Ảnh để app tự tiếp tục phần thiếu; vector đã lưu được giữ lại.' WHERE status IN ('running','queued') AND kind='semantic-index'")
         bulk.recover()
         index_queue.recover()
         try:
@@ -528,6 +528,7 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
             (settings.data_dir / directory / f'{photo_id}.jpg').unlink(missing_ok=True)
         for output in outputs:
             (settings.data_dir / 'outputs' / f'{output["id"]}.png').unlink(missing_ok=True)
+            output_thumbnail_path(settings.data_dir, output['id']).unlink(missing_ok=True)
         if source:
             (settings.data_dir/'originals'/f'{photo_id}.{source["extension"]}').unlink(missing_ok=True)
         for job_id in affected:
@@ -821,13 +822,32 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
             album_or_404(album_id)
         return store.all('SELECT o.id,o.photo_id,o.style,o.created,d.title,p.name,p.album_id,a.profile,a.width,a.height,a.bytes FROM outputs o JOIN active_photos p ON p.id=o.photo_id LEFT JOIN output_details d ON d.output_id=o.id LEFT JOIN output_assets a ON a.output_id=o.id WHERE (? IS NULL OR p.album_id=?) ORDER BY o.created DESC,o.id LIMIT ? OFFSET ?', (album_id,album_id,limit,offset))
 
+    verified_outputs = {}
+
     @app.get('/api/outputs/{output_id}/image')
-    def output_image(output_id: str, download: bool = False):
+    def output_image(output_id: str, download: bool = False, thumbnail: bool = False):
         if not store.one('SELECT o.id FROM outputs o JOIN active_photos p ON p.id=o.photo_id WHERE o.id=?', (output_id,)):
             raise HTTPException(404, 'Không tìm thấy ảnh kết quả.')
-        if not valid_output(store,settings.data_dir,output_id):
-            raise HTTPException(404,'File kết quả thiếu hoặc hỏng. Tạo lại tác phẩm hoặc thử lại lô ảnh.')
-        return FileResponse(settings.data_dir / 'outputs' / f'{output_id}.png', media_type='image/png', filename=f'LumaNest-{output_id[:8]}.png' if download else None)
+        missing = 'File kết quả thiếu hoặc hỏng. Tạo lại tác phẩm hoặc thử lại lô ảnh.'
+        cache = {'Cache-Control': 'private, max-age=3600'}
+        if thumbnail and not download:
+            path = output_thumbnail(store, settings.data_dir, output_id)
+            if path is None:
+                raise HTTPException(404, missing)
+            return FileResponse(path, media_type='image/jpeg', headers=cache)
+        path = settings.data_dir / 'outputs' / f'{output_id}.png'
+        # Hash the PNG once per file version instead of on every gallery request.
+        try:
+            stat = path.stat()
+            signature = (stat.st_mtime_ns, stat.st_size)
+        except OSError:
+            signature = None
+        if signature is None or verified_outputs.get(output_id) != signature:
+            if not valid_output(store,settings.data_dir,output_id):
+                verified_outputs.pop(output_id, None)
+                raise HTTPException(404, missing)
+            verified_outputs[output_id] = signature
+        return FileResponse(path, media_type='image/png', filename=f'LumaNest-{output_id[:8]}.png' if download else None, headers=cache)
 
     @app.post('/api/export')
     def export(payload: ExportInput):

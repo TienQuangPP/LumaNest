@@ -2,7 +2,7 @@
 // Static markup only; all photo names, notes and server messages use textContent.
 const discoveryPanel=el('section','discovery-panel');
 discoveryPanel.setAttribute('aria-labelledby','discovery-title');
-discoveryPanel.innerHTML=`<div class="discovery-heading"><div><p class="eyebrow">TÌM THEO ĐIỀU BẠN NHỚ</p><h2 id="discovery-title">Tìm ảnh bằng mô tả</h2></div><span class="local-chip">◉ AI cục bộ</span></div><form id="discovery-form"><label class="chat-sr-only" for="discovery-query">Mô tả ảnh cần tìm</label><input id="discovery-query" maxlength="300" placeholder="Ví dụ: ảnh tập thể sinh viên…" required autocomplete="off"><button id="discovery-submit" class="button primary">⌕ Tìm bằng AI</button></form><div class="discovery-bottom"><p id="discovery-status" role="status">Đang kiểm tra chỉ mục AI…</p><button id="discovery-index" class="text-button" type="button">Cập nhật AI ↗</button></div>`;
+discoveryPanel.innerHTML=`<div class="discovery-heading"><div><p class="eyebrow">TÌM THEO ĐIỀU BẠN NHỚ</p><h2 id="discovery-title">Tìm ảnh bằng mô tả</h2></div><span class="local-chip" title="Ảnh không rời khỏi máy của bạn">◉ Chạy trên máy</span></div><form id="discovery-form"><label class="chat-sr-only" for="discovery-query">Mô tả ảnh cần tìm</label><input id="discovery-query" maxlength="300" placeholder="Ví dụ: ảnh tập thể sinh viên…" required autocomplete="off"><button id="discovery-submit" class="button primary">⌕ Tìm bằng AI</button></form><div class="discovery-bottom"><p id="discovery-status" role="status">Đang kiểm tra chỉ mục AI…</p><button id="discovery-index" class="text-button hidden" type="button">Chuẩn bị ảnh còn thiếu ↗</button></div>`;
 $('page-library').insertBefore(discoveryPanel,$('page-library').querySelector('.section-top'));
 const filters=el('div','library-filters');
 filters.innerHTML=`<label class="metadata-search">Tên, nhãn hoặc ghi chú<input id="library-query" type="search" maxlength="300" placeholder="Tìm trong bộ ảnh…" autocomplete="off"></label><button id="favorite-filter" class="button outline" aria-pressed="false">☆ Yêu thích</button><label>Khung ảnh<select id="orientation-filter"><option value="all">Tất cả</option><option value="portrait">Ảnh dọc</option><option value="landscape">Ảnh ngang</option></select></label><label>Khuôn mặt<select id="faces-filter"><option value="0">Tất cả</option><option value="1">Có người</option><option value="2">Từ 2 khuôn mặt</option><option value="5">Từ 5 khuôn mặt</option></select></label><label>Sắp xếp<select id="library-sort"><option value="newest">Mới nhất</option><option value="oldest">Cũ nhất</option><option value="name">Tên ảnh</option></select></label><button id="clear-library-filters" class="text-button">Đặt lại</button>`;
@@ -20,7 +20,7 @@ const oldUpdateSelection=updateSelection;updateSelection=function(){oldUpdateSel
 const oldPhotoCard=photoCard;
 photoCard=function(photo,mode='gallery'){
   const card=oldPhotoCard(photo,mode);if(mode!=='gallery')return card;
-  const imageButton=card.querySelector('.image-button');imageButton.setAttribute('aria-label',`Xem ảnh ${photo.name}`);imageButton.onclick=()=>openLightbox(photo.id);
+  card.querySelector('.photo-info p').title=photo.name;const imageButton=card.querySelector('.image-button');imageButton.setAttribute('aria-label',`Xem ảnh ${photo.name}`);imageButton.onclick=()=>openLightbox(photo.id);
   const star=el('button',`favorite-star${photo.favorite?' is-favorite':''}`,photo.favorite?'★':'☆');star.setAttribute('aria-label',`Yêu thích ${photo.name}`);star.setAttribute('aria-pressed',String(!!photo.favorite));
   star.onclick=async()=>{star.disabled=true;try{await toggleFavorite(photo,star);if(favoritesOnly)await refreshPhotos();}catch(error){toast(error.message,true);}finally{star.disabled=false;}};card.append(star);
   const edit=el('button','photo-create','Sáng tạo ↗');edit.onclick=()=>selectPhoto(photo);card.querySelector('.photo-info').append(edit);
@@ -70,13 +70,21 @@ $('favorite-filter').onclick=()=>{favoritesOnly=!favoritesOnly;$('favorite-filte
 function clearLibraryFilters(){favoritesOnly=false;discoveryQuery=null;discoveryLimit=24;$('favorite-filter').setAttribute('aria-pressed','false');$('library-query').value='';$('orientation-filter').value='all';$('faces-filter').value='0';$('library-sort').value='newest';}
 $('clear-library-filters').onclick=()=>{clearLibraryFilters();filterChanged();};
 document.addEventListener('fsm:collection',()=>{clearTimeout(filterTimer);clearLibraryFilters();$('discovery-query').value='';});
+// New photos become searchable by description without the user having to find a maintenance button.
+const discoveryAutoStarted=new Map();
 async function refreshDiscovery(){
   if(!state.album)return;
   const album=state.album,data=await api(`/api/discovery/status?album_id=${album}`);if(album!==state.album)return;
-  $('discovery-status').textContent=data.busy?(data.job?.message||'AI đang xử lý…'):(data.installed?`${data.indexed}/${data.total} ảnh sẵn sàng`:'Chưa tải model tìm ảnh.');
+  const missing=Math.max(0,data.total-data.indexed);
+  if(data.installed&&!data.busy&&missing&&discoveryAutoStarted.get(album)!==data.total){
+    discoveryAutoStarted.set(album,data.total);
+    try{await api('/api/discovery/index',jsonRequest({album_id:album}));return refreshDiscovery();}catch{/* Another AI task holds the model; retry on the next poll. */discoveryAutoStarted.delete(album);}
+  }
+  $('discovery-status').textContent=data.busy?`Đang chuẩn bị ảnh để tìm bằng mô tả… ${data.job?.message?.match(/\d+\/\d+/)?.[0]||''}`.trim():(!data.installed?'Chưa cài tính năng tìm bằng mô tả.':missing?`${data.indexed}/${data.total} ảnh đã sẵn sàng để tìm`:`Tất cả ${data.total} ảnh đã sẵn sàng để tìm`);
+  $('discovery-index').classList.toggle('hidden',!data.installed||data.busy||!missing);
   $('discovery-index').disabled=data.busy||!data.installed;$('discovery-submit').disabled=data.busy||!data.installed||!data.indexed;
 }
-$('discovery-index').onclick=()=>busy($('discovery-index'),'Đang cập nhật…',async()=>{const album=state.album;const job=await api('/api/discovery/index',jsonRequest({album_id:album}));try{toast((await watchJob(job.job_id)).message);}finally{await refreshDiscovery();}});
+$('discovery-index').onclick=()=>busy($('discovery-index'),'Đang chuẩn bị…',async()=>{const album=state.album;const job=await api('/api/discovery/index',jsonRequest({album_id:album}));try{toast((await watchJob(job.job_id)).message);}finally{await refreshDiscovery();}});
 $('discovery-form').onsubmit=event=>{event.preventDefault();busy($('discovery-submit'),'Đang tìm…',async()=>{clearLibraryFilters();discoveryQuery={text:$('discovery-query').value};try{await refreshPhotos();$('album-title').scrollIntoView({behavior:'smooth',block:'start'});}catch(error){discoveryQuery=null;throw error;}});};
 document.addEventListener('fsm:page',()=>{if(state.page==='library')refreshDiscovery().catch(error=>toast(error.message,true));});
 setInterval(()=>{if(state.page==='library')refreshDiscovery().catch(()=>{});},5000);
@@ -151,9 +159,11 @@ $('save-colour').onclick=()=>busy($('save-colour'),'Đang lưu…',async()=>{con
 const palette=el('dialog','command-palette');palette.id='command-palette';palette.setAttribute('aria-labelledby','command-title');
 palette.innerHTML=`<h2 id="command-title">Bạn muốn làm gì?</h2><label class="chat-sr-only" for="command-query">Tìm thao tác</label><input id="command-query" placeholder="Tìm ảnh, tạo bộ, sáng tạo…" autocomplete="off"><div id="command-results"></div><button id="command-close" class="text-button">Đóng · Esc</button>`;document.body.append(palette);
 const commandButton=el('button','command-launcher','⌕ Thao tác · Ctrl K');commandButton.setAttribute('aria-label','Mở tìm thao tác');document.querySelector('.topbar-right').prepend(commandButton);
-const commands=[['▦ Mở thư viện ảnh',()=>navigate('collections')],['＋ Tạo bộ ảnh',()=>showAlbumDialog()],['⌕ Tìm ảnh bằng mô tả',()=>{navigate('library');$('discovery-query').focus();}],['☆ Xem ảnh yêu thích',()=>{navigate('library');clearLibraryFilters();favoritesOnly=true;$('favorite-filter').setAttribute('aria-pressed','true');filterChanged();}],['✳ Mở phòng sáng tạo',()=>navigate('studio')],['⌕ Tìm khuôn mặt',()=>navigate('search')],['◎ Kiểm tra hệ thống',()=>navigate('system')]];
-function renderCommands(){const q=$('command-query').value.toLocaleLowerCase('vi');$('command-results').replaceChildren();for(const [name,action] of commands.filter(([name])=>name.toLocaleLowerCase('vi').includes(q))){const button=el('button','command-option',name);button.onclick=()=>{palette.close();action();};$('command-results').append(button);}}
+const commands=[['▦ Mở thư viện ảnh',()=>navigate('collections')],['＋ Tạo bộ ảnh',()=>showAlbumDialog()],['⌕ Tìm ảnh bằng mô tả',()=>{navigate('library');$('discovery-query').focus();}],['☆ Xem ảnh yêu thích',()=>{navigate('library');clearLibraryFilters();favoritesOnly=true;$('favorite-filter').setAttribute('aria-pressed','true');filterChanged();}],['✳ Mở phòng sáng tạo',()=>navigate('studio')],['⌕ Tìm khuôn mặt',()=>navigate('search')],['◎ Kiểm tra hệ thống',()=>navigate('system')],['↑ Thêm ảnh vào bộ đang mở',()=>{if(!currentAlbum())return showAlbumDialog();navigate('library');$('photo-files').click();}],['⌫ Mở thùng rác',()=>navigate('trash')],['✳ Hỏi trợ lý',()=>$('chat-launcher').click()]];
+// Accent-insensitive: "tao bo anh" finds "Tạo bộ ảnh", as most people type without diacritics.
+function renderCommands(){const q=collectionSearchKey($('command-query').value.trim());$('command-results').replaceChildren();const matches=commands.filter(([name])=>collectionSearchKey(name).includes(q));for(const [name,action] of matches){const button=el('button','command-option',name);button.onclick=()=>{palette.close();action();};$('command-results').append(button);}if(!matches.length)$('command-results').append(el('p','helper','Không có thao tác phù hợp. Thử từ khác, ví dụ: ảnh, tìm, tạo.'));}
 function openCommands(){if(document.querySelector('dialog[open]'))return;palette.showModal();$('command-query').value='';renderCommands();$('command-query').focus();}
 commandButton.onclick=openCommands;$('command-close').onclick=()=>palette.close();$('command-query').oninput=renderCommands;
-$('command-query').onkeydown=event=>{if(event.key==='ArrowDown'){event.preventDefault();$('command-results').querySelector('button')?.focus();}if(event.key==='Enter'){$('command-results').querySelector('button')?.click();}};
+$('command-query').onkeydown=event=>{if(event.key==='ArrowDown'){event.preventDefault();$('command-results').querySelector('button')?.focus();}if(event.key==='Enter'){event.preventDefault();$('command-results').querySelector('button')?.click();}};
+$('command-results').onkeydown=event=>{const options=[...$('command-results').querySelectorAll('button')],index=options.indexOf(document.activeElement);if(index<0||!['ArrowDown','ArrowUp'].includes(event.key))return;event.preventDefault();if(event.key==='ArrowUp'&&index===0)return $('command-query').focus();options[Math.min(options.length-1,Math.max(0,index+(event.key==='ArrowDown'?1:-1)))].focus();};
 document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openCommands();}});

@@ -4,13 +4,13 @@
 
 Giải nén toàn bộ gói Windows vào thư mục có quyền ghi. Mở `LumaNest.exe`; lần đầu chọn tính năng rồi bấm **Cài đặt / sửa môi trường**. Khi đã có môi trường, bấm **Mở ứng dụng**. EXE mở server nền và trình duyệt; đóng cửa sổ launcher không tắt server.
 
-Trong **Thư viện ảnh**, tạo bộ mới, mở bộ rồi thêm ảnh. Chờ lập chỉ mục mặt hoàn tất. Mỗi bộ có **Ảnh / Tìm khuôn mặt / Sáng tạo / Thùng rác**. Không có ảnh demo tự tạo.
+Trong **Thư viện ảnh**, tạo bộ mới, mở bộ rồi thêm ảnh bằng nút **Thêm ảnh**, kéo-thả file từ máy vào cửa sổ hoặc dán ảnh (Ctrl V). Tiến độ tìm khuôn mặt hiện ở góc dưới màn hình. Mỗi bộ có **Ảnh / Tìm khuôn mặt / Sáng tạo / Thùng rác**. Không có ảnh demo tự tạo.
 
 ## Tìm và chỉnh ảnh
 
-Tìm người: tải ảnh rõ mặt trong mục **Tìm khuôn mặt**, chọn mặt đúng, kiểm tra bộ ảnh và ngưỡng. Không có kết quả có thể do thiếu chỉ mục, góc mặt hoặc ngưỡng. Hạ ngưỡng có thể tăng kết quả sai.
+Tìm người: tải ảnh rõ mặt trong mục **Tìm khuôn mặt**, chọn mặt đúng, kiểm tra bộ ảnh và ngưỡng. Không có kết quả có thể do ảnh chưa quét xong (bấm **Quét lại khuôn mặt** ở mục Ảnh), góc mặt hoặc độ khắt khe. Hạ ngưỡng có thể tăng kết quả sai.
 
-Tìm mô tả: cài SigLIP 2, cập nhật chỉ mục AI trong bộ ảnh rồi nhập câu tiếng Việt. Kết quả tương tự nội dung không xác nhận cùng người.
+Tìm mô tả: cài SigLIP 2, mở mục Ảnh (app tự chuẩn bị ảnh mới) rồi nhập câu tiếng Việt. Kết quả tương tự nội dung không xác nhận cùng người.
 
 Sáng tạo nhanh: chọn preset và mức 512 px. Tạo cả bộ hoặc các ảnh đã tích bằng nút tương ứng. Phong cách Van Gogh/ảnh tham chiếu dùng VGG19 tối ưu từng ảnh; **“Bước tối ưu 1/50 · 1 ảnh”** là 50 bước trên một ảnh. Chọn mức bước cao hơn sẽ chờ lâu hơn.
 
@@ -20,7 +20,8 @@ Chat: chọn Qwen trên máy hoặc Gemini, nhập key ở cài đặt rồi **L
 
 | Phím | Thao tác |
 |---|---|
-| Ctrl K | Tìm thao tác |
+| Ctrl K | Tìm thao tác (gõ có dấu hoặc không dấu) |
+| Ctrl V | Dán ảnh vào bộ đang mở |
 | ← / → | Chuyển ảnh trong trình xem |
 | F | Yêu thích |
 | E | Mở sáng tạo |

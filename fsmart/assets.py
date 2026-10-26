@@ -33,6 +33,35 @@ def valid_output(store, directory, output_id):
         return False
 
 
+def output_thumbnail_path(directory, output_id):
+    return directory/'output-thumbs'/f'{output_id}.jpg'
+
+
+def output_thumbnail(store, directory, output_id):
+    """Small cached JPEG for history grids; the full PNG is verified once when it is built."""
+    source = directory/'outputs'/f'{output_id}.png'
+    path = output_thumbnail_path(directory, output_id)
+    try:
+        if path.stat().st_mtime_ns >= source.stat().st_mtime_ns:
+            return path
+    except OSError:
+        pass
+    if not valid_output(store, directory, output_id):
+        return None
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f'{output_id}.{uid()}.tmp')
+    try:
+        with Image.open(source) as image:
+            image.draft('RGB', (720, 720))
+            preview = image.convert('RGB')
+        preview.thumbnail((720, 720), Image.Resampling.LANCZOS)
+        preview.save(temporary, 'JPEG', quality=84, optimize=True)
+        temporary.replace(path)
+        return path
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def save_output(store, settings, image, photo_id, style, title=None, metadata=None):
     ensure_space(settings,image.width*image.height*3+16384)
     output_id = uid()

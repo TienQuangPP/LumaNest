@@ -61,7 +61,7 @@ Thông tin ứng dụng:
   cùng tên trang và mã style hiện tại được gửi khi bật GPT. Không nói store=false là
   không có bất kỳ lưu giữ nào từ nhà cung cấp. Lịch sử chat chỉ giữ trong tab đang mở.
 - Thư viện có tìm nội dung bằng mô tả tiếng Việt với Google SigLIP 2 chạy cục bộ,
-  không cần key GPT. Bấm Cập nhật AI cho bộ mới; sau đó nhập câu mô tả ở mục Ảnh.
+  không cần key GPT. App tự chuẩn bị ảnh mới khi mở mục Ảnh; sau đó nhập câu mô tả.
   Xem ảnh lớn → Tìm ảnh tương tự dùng nội dung ảnh, không xác nhận cùng người.
   Có yêu thích, nhãn và ghi chú lưu SQLite, tìm không dấu, lọc khung ảnh/số mặt.
   Bấm ảnh mở trình xem lớn; ← → chuyển, F yêu thích, E sáng tạo, Esc đóng.
@@ -166,11 +166,11 @@ def local_answer(message):
                 'Meta SAM 2 chạy trên máy; có thể cần thêm điểm nếu vùng chọn chưa đúng. '
                 'Ảnh gốc được giữ nguyên; nền nghệ thuật cần một tác phẩm đã lưu của cùng ảnh.')
     if any(word in text for word in ['siglip','tim theo noi dung','tim bang mo ta','tim anh bang mo ta','anh tuong tu']):
-        return ('Mở một bộ ảnh → mục Ảnh → Cập nhật AI. Google SigLIP 2 tạo chỉ mục nội dung ngay trên máy, '
+        return ('Mở một bộ ảnh → mục Ảnh. App tự chuẩn bị ảnh bằng Google SigLIP 2 ngay trên máy, '
                 'không cần API key. Sau đó nhập mô tả như “ảnh tập thể sinh viên”. '
                 'Bấm ảnh để xem lớn → Tìm ảnh tương tự để tìm nội dung gần nhau. '
                 'AI xếp hạng các ảnh gần nhất, không đảm bảo tất cả đều đúng và không xác nhận cùng người. '
-                'Bộ mới cần cập nhật AI; ảnh đã có chỉ mục được dùng lại.')
+                'Ảnh mới được tự chuẩn bị khi mở mục Ảnh; ảnh đã chuẩn bị được dùng lại.')
     if any(word in text for word in ['yeu thich','nhan anh','ghi chu','phim tat','ctrl k']):
         return ('Bấm một ảnh trong thư viện để xem lớn. Bạn có thể đánh dấu ☆, thêm nhãn phân cách bằng dấu phẩy '
                 'và ghi chú rồi bấm Lưu thông tin. Tìm lại bằng ô Tên, nhãn hoặc ghi chú; '

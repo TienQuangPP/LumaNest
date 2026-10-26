@@ -46,8 +46,8 @@ async function downloadSources(ids){
 $('selection-download').onclick=()=>busy($('selection-download'),'Đang đóng gói…',()=>downloadSources([...state.selectedIds]));
 $('download-results').onclick=()=>busy($('download-results'),'Đang đóng gói…',()=>downloadSources(state.results.map(p=>p.id)));
 
-$('photo-files').onchange=async()=>{
-  const files=[...$('photo-files').files],albumId=state.album;if(!files.length||!albumId)return;
+async function uploadFiles(files){
+  const albumId=state.album;if(!files.length||!albumId)return;
   if(state.uploading)return toast('Đang tải một nhóm ảnh. Chờ quá trình tải xong.',true);
   state.uploading=true;
   await busy($('add-photos'),'Đang tải…',async()=>{
@@ -59,14 +59,50 @@ $('photo-files').onchange=async()=>{
         $('upload-state').textContent=`Đang tải nhóm ${index+1}/${groups.length}… Nhận diện tiếp tục chạy nền.`;
         const form=new FormData();groups[index].forEach(file=>form.append('files',file));
         const result=await api(`/api/albums/${albumId}/photos`,{method:'POST',body:form});accepted+=result.accepted;duplicates+=result.duplicates;failed+=result.errors.length;
-        if(result.errors.length)toast(result.errors.slice(0,3).map(e=>`${e.name}: ${e.message}`).join('; '),true);
+        if(result.job_id)watchJob(result.job_id).then(()=>refreshAlbums().then(()=>refreshPhotos())).catch(()=>{});if(result.errors.length)toast(result.errors.slice(0,3).map(e=>`${e.name}: ${e.message}`).join('; '),true);
         await refreshAlbums();await refreshPhotos();
       }
-      toast(`Đã nhận ${accepted} ảnh · ${duplicates} ảnh trùng · ${failed} lỗi. Theo dõi lập chỉ mục trong Hệ thống.`,!!failed);
+      toast(`Đã nhận ${accepted} ảnh · ${duplicates} ảnh trùng · ${failed} lỗi. App đang tìm khuôn mặt trong ảnh mới; tiến độ ở góc dưới màn hình.`,!!failed);
       refreshTasks();
     }finally{$('upload-state').classList.add('hidden');await refreshAlbums();await refreshPhotos();}
-  });state.uploading=false;$('photo-files').value='';
-};
+  });state.uploading=false;
+}
+$('photo-files').onchange=async()=>{const files=[...$('photo-files').files];$('photo-files').value='';await uploadFiles(files);};
+
+// Drag photos from Explorer, or paste a copied image, straight into the open collection.
+const uploadTypes=['image/jpeg','image/png','image/webp'];
+const dropOverlay=el('div','drop-overlay hidden');dropOverlay.setAttribute('aria-hidden','true');dropOverlay.append(el('div','drop-card'));document.body.append(dropOverlay);
+let dragDepth=0;
+function draggingFiles(event){return [...(event.dataTransfer?.types||[])].includes('Files');}
+function nativeFileTarget(event){return event.target instanceof Element&&!!event.target.closest('input[type=file],.dropzone,dialog[open]');}
+function collectionOpen(){return ['library','search','studio','trash'].includes(state.page)&&!!currentAlbum();}
+function hideDropOverlay(){dragDepth=0;dropOverlay.classList.add('hidden');}
+async function acceptPhotoFiles(files){
+  const images=files.filter(file=>uploadTypes.includes(file.type)),skipped=files.length-images.length;
+  if(!collectionOpen())return toast('Mở một bộ ảnh trước, rồi thả ảnh vào để thêm.',true);
+  if(!images.length)return toast('Chỉ nhận ảnh JPG, PNG hoặc WebP.',true);
+  if(skipped)toast(`Bỏ qua ${skipped} file không phải ảnh JPG, PNG hoặc WebP.`,true);
+  if(state.page!=='library')navigate('library');
+  await uploadFiles(images);
+}
+document.addEventListener('dragenter',event=>{
+  if(!draggingFiles(event)||nativeFileTarget(event))return;
+  dragDepth++;const album=currentAlbum();
+  dropOverlay.firstChild.textContent=collectionOpen()?`Thả ảnh để thêm vào “${album.name}”`:'Mở một bộ ảnh để thả ảnh vào';
+  dropOverlay.classList.toggle('blocked',!collectionOpen());dropOverlay.classList.remove('hidden');
+});
+document.addEventListener('dragover',event=>{if(draggingFiles(event)&&!nativeFileTarget(event)){event.preventDefault();event.dataTransfer.dropEffect=collectionOpen()?'copy':'none';}});
+document.addEventListener('dragleave',event=>{if(draggingFiles(event)&&--dragDepth<=0)hideDropOverlay();});
+document.addEventListener('drop',event=>{
+  if(!draggingFiles(event))return;hideDropOverlay();
+  if(nativeFileTarget(event))return;
+  event.preventDefault();acceptPhotoFiles([...event.dataTransfer.files]).catch(error=>toast(error.message,true));
+});
+document.addEventListener('paste',event=>{
+  if(event.target instanceof Element&&event.target.closest('input,textarea,[contenteditable]'))return;
+  const files=[...(event.clipboardData?.files||[])];if(!files.length)return;
+  event.preventDefault();acceptPhotoFiles(files).catch(error=>toast(error.message,true));
+});
 
 // Stable snapshot: a late result may never replace the preview of another photo.
 $('run-style').onclick=()=>busy($('run-style'),'Đang sáng tạo…',async()=>{
@@ -88,9 +124,12 @@ refreshOutputs=async function(append=false){
   const rows=await api(`/api/outputs?limit=50&offset=${outputOffset}${album?'&album_id='+encodeURIComponent(album):''}`);
   if(album!==state.album||version!==outputsRequestVersion)return;
   if(!append)$('output-history').replaceChildren();
-  for(const output of rows){const card=el('article','photo-card'),button=el('button','image-button'),image=el('img');image.src=`/api/outputs/${output.id}/image`;image.alt=`${output.name} - ${output.style}`;image.loading='lazy';button.append(image);button.onclick=()=>{selectPhoto({id:output.photo_id,name:output.name});showOutput(`/api/outputs/${output.id}/image`,`/api/outputs/${output.id}/image?download=true`);};const info=el('div','photo-info');info.append(el('p','',output.title||state.styles.find(s=>s.id===output.style)?.name||output.style));if(output.width)info.append(el('small','output-size',`${output.width} × ${output.height} px`));card.append(button,info);$('output-history').append(card);}
-  outputOffset+=rows.length;$('output-empty').classList.toggle('hidden',!!$('output-history').children.length);$('output-more').classList.toggle('hidden',rows.length<50);
+  for(const output of rows){const card=el('article','photo-card'),button=el('button','image-button'),image=el('img');image.dataset.src=`/api/outputs/${output.id}/image?thumbnail=true`;image.alt=`${output.name} - ${output.style}`;image.loading='lazy';image.decoding='async';button.append(image);button.onclick=()=>{selectPhoto({id:output.photo_id,name:output.name});showOutput(`/api/outputs/${output.id}/image`,`/api/outputs/${output.id}/image?download=true`);};const info=el('div','photo-info');info.append(el('p','',output.title||state.styles.find(s=>s.id===output.style)?.name||output.style));if(output.width)info.append(el('small','output-size',`${output.width} × ${output.height} px`));card.append(button,info);$('output-history').append(card);}
+  outputOffset+=rows.length;hydrateOutputs();$('output-empty').classList.toggle('hidden',!!$('output-history').children.length);$('output-more').classList.toggle('hidden',rows.length<50);
 };
+// Artwork history lives in a hidden tab; fetch its thumbnails only once the studio is opened.
+function hydrateOutputs(){if(state.page!=='studio')return;for(const image of document.querySelectorAll('#output-history img[data-src]')){image.src=image.dataset.src;image.removeAttribute('data-src');}}
+document.addEventListener('fsm:page',hydrateOutputs);
 $('output-more').onclick=()=>busy($('output-more'),'Đang tải…',()=>refreshOutputs(true));
 
 // Reconnect independent jobs without making a page reload lose all progress.
@@ -106,7 +145,7 @@ async function refreshTasks(){
       const previous=lastJobsSignature;lastJobsSignature=signature;
       $('task-list').replaceChildren(...jobs.slice(0,12).map(job=>{
         const row=el('article',`task-row task-${job.status}`);
-        const names={index:'Lập chỉ mục khuôn mặt',stylize:'Tạo ảnh', 'bulk-style':'Style theo lô'};
+        const names={index:'Tìm khuôn mặt trong ảnh mới',stylize:'Tạo ảnh nghệ thuật','bulk-style':'Tạo ảnh nghệ thuật theo lô','semantic-index':'Chuẩn bị tìm bằng mô tả'};
         const statuses={queued:'Đang chờ',running:'Đang xử lý',done:'Hoàn tất',error:'Có lỗi',cancelled:'Đã dừng'};
         row.append(el('b','',`${names[job.kind]||job.kind} · ${statuses[job.status]||job.status}`),el('p','',formatJobMessage(job.message)));
         const progress=el('progress');progress.max=1;progress.value=job.progress;row.append(progress);return row;
