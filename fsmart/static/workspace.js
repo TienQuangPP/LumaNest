@@ -1,24 +1,9 @@
 'use strict';
 let outputOffset=0;
 let outputsRequestVersion=0;
-let thresholdInitialized=false;
-const baseRefreshHealth=refreshHealth;
-refreshHealth=async function(){const threshold=$('threshold').value;await baseRefreshHealth();if(thresholdInitialized)$('threshold').value=threshold;else{const saved=Number(localStorage.getItem('fsm-threshold'));if(saved>=.1&&saved<=.9)$('threshold').value=String(saved);thresholdInitialized=true;}$('threshold-value').textContent=Number($('threshold').value).toFixed(2);};
 $('threshold').addEventListener('input',()=>localStorage.setItem('fsm-threshold',$('threshold').value));
 $('speed-profile').value=['fast','balanced','quality'].includes(localStorage.getItem('fsm-speed-profile'))?localStorage.getItem('fsm-speed-profile'):'fast';
 $('speed-profile').onchange=()=>localStorage.setItem('fsm-speed-profile',$('speed-profile').value);
-function updateSelection(){
-  const count=state.selectedIds.size;
-  $('selection-count').textContent=`${count} ảnh đã chọn`;
-  $('selection-create').disabled=!count;
-  $('selection-download').disabled=!count;
-  $('selection-clear').disabled=!count;
-  $('selection-move').disabled=!count;
-  $('selection-delete').disabled=!count;
-  $('run-selection-batch').classList.toggle('hidden',!count);
-  $('run-selection-batch').textContent=`✳ Tạo style ${count} ảnh đã chọn`;
-  document.querySelectorAll('.photo-select input').forEach(input=>{input.checked=state.selectedIds.has(input.dataset.photo);});
-}
 function addSelectionControls(){
   for(const card of document.querySelectorAll('#gallery .photo-card')){
     if(card.querySelector('.photo-select'))continue;
@@ -119,14 +104,14 @@ $('run-style').onclick=()=>busy($('run-style'),'Đang sáng tạo…',async()=>{
   }finally{state.styleGenerating=false;}
 });
 
-refreshOutputs=async function(append=false){
+async function refreshOutputs(append=false){
   const album=state.album,version=++outputsRequestVersion;if(!append)outputOffset=0;
   const rows=await api(`/api/outputs?limit=50&offset=${outputOffset}${album?'&album_id='+encodeURIComponent(album):''}`);
   if(album!==state.album||version!==outputsRequestVersion)return;
   if(!append)$('output-history').replaceChildren();
   for(const output of rows){const card=el('article','photo-card'),button=el('button','image-button'),image=el('img');image.dataset.src=`/api/outputs/${output.id}/image?thumbnail=true`;image.alt=`${output.name} - ${output.style}`;image.loading='lazy';image.decoding='async';button.append(image);button.onclick=()=>{selectPhoto({id:output.photo_id,name:output.name});showOutput(`/api/outputs/${output.id}/image`,`/api/outputs/${output.id}/image?download=true`);};const info=el('div','photo-info');info.append(el('p','',output.title||state.styles.find(s=>s.id===output.style)?.name||output.style));if(output.width)info.append(el('small','output-size',`${output.width} × ${output.height} px`));card.append(button,info);$('output-history').append(card);}
   outputOffset+=rows.length;hydrateOutputs();$('output-empty').classList.toggle('hidden',!!$('output-history').children.length);$('output-more').classList.toggle('hidden',rows.length<50);
-};
+}
 // Artwork history lives in a hidden tab; fetch its thumbnails only once the studio is opened.
 function hydrateOutputs(){if(state.page!=='studio')return;for(const image of document.querySelectorAll('#output-history img[data-src]')){image.src=image.dataset.src;image.removeAttribute('data-src');}}
 document.addEventListener('fsm:page',hydrateOutputs);
@@ -161,4 +146,3 @@ async function refreshTasks(){
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshTasks();});
 refreshTasks();
-addSelectionControls();

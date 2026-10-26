@@ -16,17 +16,38 @@ selectionFavorite.onclick=()=>busy(selectionFavorite,'Đang lưu…',async()=>{
 });
 
 let discoveryQuery=null,filterTimer,favoritesOnly=false,discoveryLimit=24;
-const oldUpdateSelection=updateSelection;updateSelection=function(){oldUpdateSelection();document.querySelector('#page-library .selection-bar').classList.toggle('has-selection',!!state.selectedIds.size);selectionFavorite.disabled=!state.selectedIds.size;selectionFavorite.textContent=favoritesOnly?'☆ Bỏ yêu thích ảnh đã chọn':'☆ Yêu thích ảnh đã chọn';};updateSelection();
-const oldPhotoCard=photoCard;
-photoCard=function(photo,mode='gallery'){
-  const card=oldPhotoCard(photo,mode);if(mode!=='gallery')return card;
-  card.querySelector('.photo-info p').title=photo.name;const imageButton=card.querySelector('.image-button');imageButton.setAttribute('aria-label',`Xem ảnh ${photo.name}`);imageButton.onclick=()=>openLightbox(photo.id);
+function updateSelection(){
+  const count=state.selectedIds.size;
+  $('selection-count').textContent=`${count} ảnh đã chọn`;
+  $('selection-create').disabled=!count;
+  $('selection-download').disabled=!count;
+  $('selection-clear').disabled=!count;
+  $('selection-move').disabled=!count;
+  $('selection-delete').disabled=!count;
+  $('run-selection-batch').classList.toggle('hidden',!count);
+  $('run-selection-batch').textContent=`✳ Tạo style ${count} ảnh đã chọn`;
+  document.querySelectorAll('.photo-select input').forEach(input=>{input.checked=state.selectedIds.has(input.dataset.photo);});
+  document.querySelector('#page-library .selection-bar').classList.toggle('has-selection',!!count);
+  selectionFavorite.disabled=!count;selectionFavorite.textContent=favoritesOnly?'☆ Bỏ yêu thích ảnh đã chọn':'☆ Yêu thích ảnh đã chọn';
+}
+addSelectionControls();
+// Gallery cards open the lightbox; face-search result cards (search.js) open the studio.
+function photoCard(photo,mode='gallery'){
+  const card=el('article','photo-card');card.dataset.photo=photo.id;
+  const button=el('button','image-button'),image=el('img');image.src=`/api/photos/${photo.id}/image?thumbnail=true`;image.alt=photo.name;image.loading='lazy';button.append(image);
+  if(mode==='result')button.append(el('span','photo-badge',`Tương đồng ${photo.similarity.toFixed(3)}`));
+  const info=el('div','photo-info'),name=el('p','',photo.name);info.append(name);card.append(button,info);
+  if(mode!=='gallery'){button.setAttribute('aria-label',`Chọn ảnh ${photo.name}`);button.onclick=()=>selectPhoto(photo);info.append(el('small','','Sáng tạo ↗'));return card;}
+  name.title=photo.name;button.setAttribute('aria-label',`Xem ảnh ${photo.name}`);button.onclick=()=>openLightbox(photo.id);
+  const status=photo.status==='ready'?`${photo.face_count} khuôn mặt`:photo.status==='error'?'Lỗi xử lý':'Đang xử lý';
+  const small=el('small',photo.status==='error'?'photo-error':'',status);if(photo.error)small.title=photo.error;info.append(small);
+  const remove=el('button','delete-photo','⌫');remove.setAttribute('aria-label',`Xóa ảnh ${photo.name}`);remove.title='Chuyển ảnh vào thùng rác';remove.disabled=photo.status==='queued';remove.onclick=()=>requestTrash([photo.id]);info.append(remove);
   const star=el('button',`favorite-star${photo.favorite?' is-favorite':''}`,photo.favorite?'★':'☆');star.setAttribute('aria-label',`Yêu thích ${photo.name}`);star.setAttribute('aria-pressed',String(!!photo.favorite));
   star.onclick=async()=>{star.disabled=true;try{await toggleFavorite(photo,star);if(favoritesOnly)await refreshPhotos();}catch(error){toast(error.message,true);}finally{star.disabled=false;}};card.append(star);
-  const edit=el('button','photo-create','Sáng tạo ↗');edit.onclick=()=>selectPhoto(photo);card.querySelector('.photo-info').append(edit);
+  const edit=el('button','photo-create','Sáng tạo ↗');edit.onclick=()=>selectPhoto(photo);info.append(edit);
   if(photo.tags?.length){const labels=el('div','photo-tags');photo.tags.slice(0,3).forEach(tag=>labels.append(el('span','',tag)));card.append(labels);}
   return card;
-};
+}
 async function toggleFavorite(photo,button){
   const result=await api(`/api/photos/${photo.id}/metadata`,{...jsonRequest({favorite:!photo.favorite}),method:'PATCH'});
   Object.assign(photo,result);for(const item of state.photos)if(item.id===photo.id)Object.assign(item,result);
@@ -34,7 +55,7 @@ async function toggleFavorite(photo,button){
   if(lightboxPhoto?.id===photo.id){lightboxPhoto={...lightboxPhoto,favorite:result.favorite,version:result.version};updateLightboxStar();}
   return result;
 }
-refreshPhotos=async function(append=false){
+async function refreshPhotos(append=false){
   const album=currentAlbum(),version=++photosRequestVersion;
   if(!album){state.photos=[];$('gallery').replaceChildren();$('gallery-empty').classList.remove('hidden');$('load-more').classList.add('hidden');return;}
   let result;
@@ -62,7 +83,7 @@ refreshPhotos=async function(append=false){
   for(const photo of state.photos){const option=el('option','',photo.name);option.value=photo.id;$('studio-photo').append(option);}
   if(state.selected&&!state.photos.some(photo=>photo.id===selected)){const option=el('option','',state.selected.name);option.value=selected;$('studio-photo').append(option);}
   $('studio-photo').value=selected;syncPhotoPickers();updateCollectionContext();
-};
+}
 function filterChanged(){discoveryQuery=null;updateSelection();refreshPhotos().catch(error=>toast(error.message,true));}
 $('library-query').oninput=()=>{clearTimeout(filterTimer);filterTimer=setTimeout(filterChanged,220);};
 ['orientation-filter','faces-filter','library-sort'].forEach(id=>$(id).onchange=filterChanged);
@@ -137,8 +158,6 @@ $('batch-section').before(colourLab);
 let colourLook='cinema',colourTimer,colourController,colourObjectURL,colourSourceOutput=null,colourPreviewActive=false;
 let studioPreviewEpoch=0,studioPreviewAbort=null;
 function invalidateStudioPreview(){studioPreviewEpoch++;studioPreviewAbort?.abort();colourController?.abort();clearTimeout(colourTimer);}
-const oldResetStudio=resetStudio;resetStudio=function(){invalidateStudioPreview();oldResetStudio();colourSourceOutput=null;colourPreviewActive=false;if($('colour-source'))$('colour-source').value='original';};
-const oldShowOutput=showOutput;showOutput=function(image,download){invalidateStudioPreview();oldShowOutput(image,download);$('after-label').textContent='Sau sáng tạo';colourSourceOutput=image.match(/^\/api\/outputs\/([0-9a-f]{32})\/image/)?.[1]||null;colourPreviewActive=false;};
 function colourPayload(){if(!state.selected)throw new Error('Chọn ảnh trước khi thử màu.');const source=$('colour-source').value==='output'?colourSourceOutput:null;if($('colour-source').value==='output'&&!source)throw new Error('Chưa có tác phẩm đang xem. Tạo hoặc mở một tác phẩm trước.');return {photo_id:state.selected.id,look:colourLook,strength:Number($('colour-strength').value),source_output:source};}
 async function previewColour(){
   const payload=colourPayload(),photoId=payload.photo_id;invalidateStudioPreview();const epoch=studioPreviewEpoch,controller=new AbortController();colourController=controller;
@@ -146,7 +165,7 @@ async function previewColour(){
   const response=await fetch(`/api/photos/${photoId}/look-preview?${params}`,{signal:controller.signal});if(!response.ok){const data=await response.json();throw new Error(data.detail||'Không xem trước được màu.');}
   const blob=await response.blob();if(state.selected?.id!==photoId||controller.signal.aborted||epoch!==studioPreviewEpoch)return;
   if(colourObjectURL)URL.revokeObjectURL(colourObjectURL);colourObjectURL=URL.createObjectURL(blob);
-  oldShowOutput(colourObjectURL,'');$('download-art').classList.add('hidden');$('after-label').textContent='Xem trước màu';colourPreviewActive=true;
+  showComparison(colourObjectURL,'');$('download-art').classList.add('hidden');$('after-label').textContent='Xem trước màu';colourPreviewActive=true;
   $('colour-status').textContent='Bản xem trước · 640 px';
 }
 function scheduleColour(){clearTimeout(colourTimer);colourTimer=setTimeout(()=>{if(state.selected)previewColour().catch(error=>{if(error.name!=='AbortError')toast(error.message,true);});},160);}
