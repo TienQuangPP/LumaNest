@@ -12,9 +12,9 @@ body footer,body footer p,body .sidebar-bottom small{font-size:11px}
 body .photo-info p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* Drop photos from the file manager anywhere in an open collection. */
-.drop-overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(23,63,54,.38);backdrop-filter:blur(2px);pointer-events:none}
+.drop-overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:color-mix(in srgb,var(--green) 38%,transparent);backdrop-filter:blur(2px);pointer-events:none}
 .drop-overlay.hidden{display:none}
-.drop-card{max-width:min(520px,86vw);padding:42px 36px;border:3px dashed #fff;border-radius:22px;background:rgba(23,63,54,.88);color:#fff;font-size:20px;font-weight:700;text-align:center;line-height:1.4}
+.drop-card{max-width:min(520px,86vw);padding:42px 36px;border:3px dashed var(--on-dark);border-radius:22px;background:color-mix(in srgb,var(--green) 88%,transparent);color:var(--on-dark);font-size:20px;font-weight:700;text-align:center;line-height:1.4}
 .drop-overlay.blocked .drop-card{background:rgba(120,52,32,.9)}
 
 /* Visible keyboard focus for people who navigate with Tab. */

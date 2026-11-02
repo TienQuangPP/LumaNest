@@ -1,0 +1,20 @@
+/* LumaNest design tokens. Loaded before every other stylesheet; components read colours, fonts and
+   shape from here, so a re-theme changes these values instead of hunting hex codes in each file. */
+:root{
+  /* Surfaces and text */
+  --paper:#f8f7f2;      /* page background */
+  --white:#fffefa;      /* cards, panels, dialogs */
+  --soft:#edf0e6;       /* subtle fills, hover states */
+  --line:#e4e6dc;       /* borders and dividers */
+  --ink:#203c34;        /* body text */
+  --muted:#788179;      /* secondary text */
+  --on-dark:#fff;       /* text and rings on dark or image backgrounds */
+  /* Brand */
+  --green:#173f36;      /* primary actions, brand mark */
+  --orange:#dc6d43;     /* accent, highlights */
+  --focus:#ed9e69;      /* keyboard focus ring */
+  /* Type and shape */
+  --font-body:Segoe UI,Arial,sans-serif;
+  --font-display:Georgia,'Times New Roman',serif;
+  --radius:16px;
+}
