@@ -46,5 +46,5 @@ def test_linked_assets_exist_and_tokens_load_first():
     html, _ = _sources()
     sheets = re.findall(r'<link rel="stylesheet" href="/static/([^"?]+)', html)
     scripts = re.findall(r'<script src="/static/([^"?]+)', html)
-    assert sheets[0] == 'theme.css'
+    assert sheets[:2] == ['fonts.css', 'theme.css']
     assert [name for name in sheets + scripts if not (STATIC / name).is_file()] == []

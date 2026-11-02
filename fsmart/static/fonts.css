@@ -1,0 +1,5 @@
+/* Be Vietnam Pro, bundled so the app stays offline (SIL OFL 1.1, see fonts/OFL.txt). Only the weights the UI uses. */
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:400;font-display:swap;src:url('/static/fonts/BeVietnamPro-Regular.ttf') format('truetype')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:500;font-display:swap;src:url('/static/fonts/BeVietnamPro-Medium.ttf') format('truetype')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:600;font-display:swap;src:url('/static/fonts/BeVietnamPro-SemiBold.ttf') format('truetype')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:700;font-display:swap;src:url('/static/fonts/BeVietnamPro-Bold.ttf') format('truetype')}
