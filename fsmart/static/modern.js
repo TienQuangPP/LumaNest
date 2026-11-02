@@ -55,9 +55,28 @@ async function toggleFavorite(photo,button){
   if(lightboxPhoto?.id===photo.id){lightboxPhoto={...lightboxPhoto,favorite:result.favorite,version:result.version};updateLightboxStar();}
   return result;
 }
+// Photos fade in the first time they scroll into view. The gallery re-renders often (favourites, indexing
+// progress), so a photo already shown in this collection never animates again.
+const shownPhotoIds=new Set(),reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
+const revealObserver=new IntersectionObserver(entries=>{
+  entries.filter(entry=>entry.isIntersecting).forEach((entry,index)=>{
+    const card=entry.target;revealObserver.unobserve(card);card.style.setProperty('--reveal-index',index);
+    const settle=()=>{card.classList.remove('reveal','revealed');card.style.removeProperty('--reveal-index');};
+    card.addEventListener('transitionend',settle,{once:true});setTimeout(settle,1500);
+    requestAnimationFrame(()=>card.classList.add('revealed'));
+  });
+},{rootMargin:'0px 0px -40px 0px'});
+function revealCard(card,id){if(shownPhotoIds.has(id))return;shownPhotoIds.add(id);if(reduceMotion.matches)return;card.classList.add('reveal');revealObserver.observe(card);}
+function showGallerySkeleton(){$('gallery').setAttribute('aria-busy','true');$('gallery').replaceChildren(...Array.from({length:8},()=>{const node=el('div','photo-skeleton');node.setAttribute('aria-hidden','true');return node;}));}
 async function refreshPhotos(append=false){
   const album=currentAlbum(),version=++photosRequestVersion;
   if(!album){state.photos=[];$('gallery').replaceChildren();$('gallery-empty').classList.remove('hidden');$('load-more').classList.add('hidden');return;}
+  if(!append&&!$('gallery').children.length)showGallerySkeleton();
+  try{await loadGalleryPage(album,version,append);}
+  catch(error){if(version===photosRequestVersion)$('gallery').querySelectorAll('.photo-skeleton').forEach(node=>node.remove());throw error;}
+  finally{if(version===photosRequestVersion)$('gallery').removeAttribute('aria-busy');}
+}
+async function loadGalleryPage(album,version,append){
   let result;
   if(discoveryQuery){
     if(append)discoveryLimit=Math.min(100,discoveryLimit+24);
@@ -73,7 +92,7 @@ async function refreshPhotos(append=false){
     $('album-title').textContent=favoritesOnly?'Ảnh yêu thích':'Ảnh trong bộ';$('album-meta').textContent=`${result.total} / ${album.photo_count} ảnh`;
   }
   state.photos=append&&!discoveryQuery?[...state.photos,...result.items]:result.items;
-  $('gallery').replaceChildren(...state.photos.map(photo=>photoCard(photo)));
+  $('gallery').replaceChildren(...state.photos.map(photo=>{const card=photoCard(photo);revealCard(card,photo.id);return card;}));
   $('gallery-empty').classList.toggle('hidden',!!state.photos.length);
   $('gallery-empty').querySelector('h3').textContent=album.photo_count?'Không có ảnh phù hợp':'Chỗ dành cho những kỷ niệm';
   $('gallery-empty').querySelector('p').textContent=album.photo_count?'Thử mô tả khác hoặc đặt lại bộ lọc.':'Thêm ảnh để bắt đầu bộ sưu tập của bạn.';
@@ -90,7 +109,7 @@ $('library-query').oninput=()=>{clearTimeout(filterTimer);filterTimer=setTimeout
 $('favorite-filter').onclick=()=>{favoritesOnly=!favoritesOnly;$('favorite-filter').setAttribute('aria-pressed',String(favoritesOnly));filterChanged();};
 function clearLibraryFilters(){favoritesOnly=false;discoveryQuery=null;discoveryLimit=24;$('favorite-filter').setAttribute('aria-pressed','false');$('library-query').value='';$('orientation-filter').value='all';$('faces-filter').value='0';$('library-sort').value='newest';}
 $('clear-library-filters').onclick=()=>{clearLibraryFilters();filterChanged();};
-document.addEventListener('fsm:collection',()=>{clearTimeout(filterTimer);clearLibraryFilters();$('discovery-query').value='';});
+document.addEventListener('fsm:collection',()=>{clearTimeout(filterTimer);clearLibraryFilters();shownPhotoIds.clear();$('discovery-query').value='';});
 // New photos become searchable by description without the user having to find a maintenance button.
 const discoveryAutoStarted=new Map();
 async function refreshDiscovery(){
@@ -178,7 +197,7 @@ $('save-colour').onclick=()=>busy($('save-colour'),'Đang lưu…',async()=>{con
 const palette=el('dialog','command-palette');palette.id='command-palette';palette.setAttribute('aria-labelledby','command-title');
 palette.innerHTML=`<h2 id="command-title">Bạn muốn làm gì?</h2><label class="chat-sr-only" for="command-query">Tìm thao tác</label><input id="command-query" placeholder="Tìm ảnh, tạo bộ, sáng tạo…" autocomplete="off"><div id="command-results"></div><button id="command-close" class="text-button">Đóng · Esc</button>`;document.body.append(palette);
 const commandButton=el('button','command-launcher','⌕ Thao tác · Ctrl K');commandButton.setAttribute('aria-label','Mở tìm thao tác');document.querySelector('.topbar-right').prepend(commandButton);
-const commands=[['▦ Mở thư viện ảnh',()=>navigate('collections')],['＋ Tạo bộ ảnh',()=>showAlbumDialog()],['⌕ Tìm ảnh bằng mô tả',()=>{navigate('library');$('discovery-query').focus();}],['☆ Xem ảnh yêu thích',()=>{navigate('library');clearLibraryFilters();favoritesOnly=true;$('favorite-filter').setAttribute('aria-pressed','true');filterChanged();}],['✳ Mở phòng sáng tạo',()=>navigate('studio')],['⌕ Tìm khuôn mặt',()=>navigate('search')],['◎ Kiểm tra hệ thống',()=>navigate('system')],['↑ Thêm ảnh vào bộ đang mở',()=>{if(!currentAlbum())return showAlbumDialog();navigate('library');$('photo-files').click();}],['⌫ Mở thùng rác',()=>navigate('trash')],['✳ Hỏi trợ lý',()=>$('chat-launcher').click()]];
+const commands=[['▦ Mở thư viện ảnh',()=>navigate('collections')],['＋ Tạo bộ ảnh',()=>showAlbumDialog()],['⌕ Tìm ảnh bằng mô tả',()=>{navigate('library');$('discovery-query').focus();}],['☆ Xem ảnh yêu thích',()=>{navigate('library');clearLibraryFilters();favoritesOnly=true;$('favorite-filter').setAttribute('aria-pressed','true');filterChanged();}],['✳ Mở phòng sáng tạo',()=>navigate('studio')],['⌕ Tìm khuôn mặt',()=>navigate('search')],['◎ Kiểm tra hệ thống',()=>navigate('system')],['↑ Thêm ảnh vào bộ đang mở',()=>{if(!currentAlbum())return showAlbumDialog();navigate('library');$('photo-files').click();}],['⌫ Mở thùng rác',()=>navigate('trash')],['✳ Hỏi trợ lý',()=>$('chat-launcher').click()],['◐ Đổi giao diện sáng/tối',toggleTheme]];
 // Accent-insensitive: "tao bo anh" finds "Tạo bộ ảnh", as most people type without diacritics.
 function renderCommands(){const q=collectionSearchKey($('command-query').value.trim());$('command-results').replaceChildren();const matches=commands.filter(([name])=>collectionSearchKey(name).includes(q));for(const [name,action] of matches){const button=el('button','command-option',name);button.onclick=()=>{palette.close();action();};$('command-results').append(button);}if(!matches.length)$('command-results').append(el('p','helper','Không có thao tác phù hợp. Thử từ khác, ví dụ: ảnh, tìm, tạo.'));}
 function openCommands(){if(document.querySelector('dialog[open]'))return;palette.showModal();$('command-query').value='';renderCommands();$('command-query').focus();}
