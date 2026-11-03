@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" fill="none">
+  <defs>
+    <radialGradient id="trash-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.25"/>
+      <stop offset="70%" stop-color="#ef4444" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#131728" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="trash-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="80" r="70" fill="url(#trash-glow)"/>
+  <!-- Trash Can Lid -->
+  <path d="M80 52 L120 52" stroke="url(#trash-stroke)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M92 52 C92 46 108 46 108 52" stroke="url(#trash-stroke)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Bin Body -->
+  <path d="M84 60 L87 112 C87 116 90 119 94 119 L106 119 C110 119 113 116 113 112 L116 60" fill="#1b2038" stroke="url(#trash-stroke)" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Lines in bin -->
+  <line x1="95" y1="72" x2="95" y2="106" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+  <line x1="105" y1="72" x2="105" y2="106" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+  <!-- Floating Sparkles / Clean particles -->
+  <path d="M140 65 L141.5 70 L146.5 71.5 L141.5 73 L140 78 L138.5 73 L133.5 71.5 L138.5 70 Z" fill="#22d3ee" opacity="0.8"/>
+  <circle cx="68" cy="70" r="2.5" fill="#f59e0b" opacity="0.7"/>
+  <circle cx="132" cy="105" r="2" fill="#ec4899" opacity="0.6"/>
+</svg>
