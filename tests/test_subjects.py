@@ -1,10 +1,12 @@
 import io,json
+from types import SimpleNamespace
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image,ImageDraw
 from fsmart.app import create_app
 from fsmart.config import Settings
+from fsmart.subjects import Point,SamEngine
 from test_app import TestModels,upload
 
 
@@ -18,12 +20,44 @@ class PreviewModels(TestModels):
 class FakeSam:
     installed=True
     calls=0
-    def segment(self,image,points):
+    def segment(self,image,points,key=None):
         self.calls+=1
         masks=[]
         for fraction in [.25,.3,.35]:
             mask=Image.new('L',image.size);ImageDraw.Draw(mask).rectangle((image.width*fraction,image.height*fraction,image.width*(1-fraction),image.height*(1-fraction)),fill=255);masks.append(mask)
         return masks
+    def forget(self,photo_ids):pass
+
+
+class FakeSamProcessor:
+    def __call__(self,images=None,input_points=None,input_labels=None,original_sizes=None,return_tensors=None):
+        import torch
+        if images is not None:return {'pixel_values':torch.zeros(1,3,4,4),'original_sizes':torch.tensor([[images.height,images.width]])}
+        assert original_sizes is not None
+        return {'input_points':torch.tensor(input_points),'input_labels':torch.tensor(input_labels)}
+    def post_process_masks(self,masks,original_sizes):
+        import torch
+        return [torch.nn.functional.interpolate(masks[0].float(),size=tuple(original_sizes[0].tolist()))>0]
+
+
+class FakeSamModel:
+    """Counts image-encoder runs separately from prompt decoding."""
+    def __init__(self):self.encoded,self.decoded=0,[]
+    def get_image_embeddings(self,pixel_values):
+        import torch
+        self.encoded+=1;return [torch.full((1,1,2,2),float(self.encoded))]
+    def __call__(self,image_embeddings,input_points,input_labels):
+        import torch
+        self.decoded.append((image_embeddings,input_points.tolist(),input_labels.tolist()))
+        masks=torch.zeros(1,1,3,4,4);masks[0,0,0,:1]=1;masks[0,0,1,:2]=1;masks[0,0,2,:3]=1
+        return SimpleNamespace(pred_masks=masks,iou_scores=torch.tensor([[[.2,.9,.5]]]))
+
+
+class LoadedSam(SamEngine):
+    installed=True
+    def __init__(self,capacity=4):
+        pytest.importorskip('torch')
+        super().__init__(None,capacity);self.model,self.processor=FakeSamModel(),FakeSamProcessor()
 
 
 @pytest.fixture
@@ -100,6 +134,47 @@ def test_masks_follow_trash_restore_and_purge(client):
     client.post(f'/api/albums/{album}/trash',json={'photo_ids':[photo]})
     assert client.post('/api/trash/purge',json={'photo_ids':[photo]}).status_code==200
     assert all(not path.exists() for path in paths) and not client.app.state.store.all('SELECT * FROM subject_masks WHERE photo_id=?',(photo,))
+
+
+def test_engine_encodes_each_photo_once_and_only_decodes_new_points():
+    engine=LoadedSam();image=Image.new('RGB',(8,6))
+    first=engine.segment(image,[Point(x=.5,y=.5)],('photo','digest'))
+    second=engine.segment(image,[Point(x=0,y=0),Point(x=1,y=1,label=0)],('photo','digest'))
+    assert engine.model.encoded==1 and len(engine.model.decoded)==2
+    assert engine.model.decoded[0][0] is engine.model.decoded[1][0]
+    assert engine.model.decoded[0][1:]==([[[[3.5,2.5]]]],[[[1]]]) and engine.model.decoded[1][1:]==([[[[0,0],[7,5]]]],[[[1,0]]])
+    for masks in [first,second]:
+        assert [mask.size for mask in masks]==[(8,6)]*3
+        assert [np.asarray(mask).any(axis=1).sum() for mask in masks]==[3,5,2]  # ordered by IoU score: .9, .5, .2
+
+
+def test_engine_embedding_cache_is_bounded_and_follows_digest_and_forget():
+    engine=LoadedSam(capacity=2);image=Image.new('RGB',(8,6));point=[Point(x=.5,y=.5)]
+    for key in [('a','1'),('b','1'),('a','1'),('c','1')]:engine.segment(image,point,key)
+    assert engine.model.encoded==3 and list(engine.embeddings)==[('a','1'),('c','1')]
+    engine.segment(image,point,('a','2'))
+    assert engine.model.encoded==4 and list(engine.embeddings)==[('c','1'),('a','2')]
+    engine.forget({'a'});assert list(engine.embeddings)==[('c','1')]
+    engine.segment(image,point);engine.segment(image,point)
+    assert engine.model.encoded==6 and list(engine.embeddings)==[('c','1')]
+
+
+def test_photo_embeddings_are_reused_across_clicks_and_dropped_on_delete(client):
+    album,photo,other=seed(client)
+    engine=client.app.state.subjects.engine=LoadedSam()
+    digest=lambda photo_id:client.app.state.store.one('SELECT digest FROM photos WHERE id=?',(photo_id,))['digest']
+    for x in [.5,.3]:
+        result=client.post('/api/subjects/segment',json={'photo_id':photo,'points':[{'x':x,'y':.5,'label':1}]})
+        assert result.status_code==200 and not result.json()['cached'] and len(result.json()['masks'])==3
+    assert segment(client,photo).json()['cached']
+    assert engine.model.encoded==1 and len(engine.model.decoded)==2 and list(engine.embeddings)==[(photo,digest(photo))]
+    assert segment(client,other).status_code==200 and engine.model.encoded==2
+    assert client.delete(f'/api/photos/{photo}').status_code==200 and list(engine.embeddings)==[(other,digest(other))]
+    assert segment(client,photo).status_code==404
+    assert client.post('/api/trash/restore',json={'photo_ids':[photo]}).status_code==200
+    assert client.post('/api/subjects/segment',json={'photo_id':photo,'points':[{'x':.1,'y':.1,'label':1}]}).status_code==200
+    assert engine.model.encoded==3 and set(engine.embeddings)=={(photo,digest(photo)),(other,digest(other))}
+    assert client.post(f'/api/albums/{album}/trash',json={'photo_ids':[photo,other]}).status_code==200 and not engine.embeddings
 
 
 def test_invalid_points_busy_and_missing_weights_are_explicit(client):
