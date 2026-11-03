@@ -21,10 +21,16 @@ Báo cáo chi tiết quá trình thực hiện gói đồ hoạ (CSS & SVG) theo
 - `fsmart/static/comfort.css`: Đảm bảo floor text chức năng >= 12px, vòng focus bàn phím kép cyan phát sáng (`--glow-cyan`), lớp phủ kéo thả ảnh kính mờ với viền dashed neon, loại bỏ 100% mã hex.
 
 ### Các file SVG minh hoạ mới (`fsmart/static/illustrations/`):
-- `fsmart/static/illustrations/aurora-empty.svg`: Minh hoạ tranh trừu tượng thẻ ảnh với hào quang cực quang cho trạng thái thư viện / bộ sưu tập rỗng.
-- `fsmart/static/illustrations/aurora-faces.svg`: Minh hoạ lưới quét nhận diện khuôn mặt cyan & tím neon cho trang tìm kiếm.
-- `fsmart/static/illustrations/aurora-studio.svg`: Minh hoạ đũa phép nghệ thuật & bảng màu cho phòng sáng tạo.
+- `fsmart/static/illustrations/aurora-empty.svg`: Minh hoạ tranh trừu tượng thẻ ảnh với hào quang cực quang cho trạng thái thư viện ảnh rỗng.
+- `fsmart/static/illustrations/aurora-collections.svg`: Minh hoạ rương kỷ niệm ánh sáng và các khung ảnh lơ lửng cho trạng thái bộ sưu tập rỗng.
+- `fsmart/static/illustrations/aurora-faces.svg`: Minh hoạ lưới quét nhận diện khuôn mặt cyber cyan & tím neon cho trang tìm kiếm.
+- `fsmart/static/illustrations/aurora-studio.svg`: Minh hoạ đũa phép nghệ thuật & bảng màu cho phòng sáng tạo studio.
 - `fsmart/static/illustrations/aurora-trash.svg`: Minh hoạ thùng rác tối giản cùng các hạt phân tử hào quang.
+- `fsmart/static/illustrations/aurora-picker.svg`: Minh hoạ ống kính khẩu độ máy ảnh quang học cho hộp thoại chọn ảnh.
+- `fsmart/static/illustrations/pipeline-import.svg`: Khối tinh thể không gian đa chiều 3D cho bước 01 - Nhập và giữ nguồn.
+- `fsmart/static/illustrations/pipeline-ai.svg`: Mạng nơ-ron quét sinh trắc học và khung ngắm HUD cho bước 02 - Nhận diện và tìm kiếm.
+- `fsmart/static/illustrations/pipeline-style.svg`: Bảng màu lăng kính ma thuật và cọ vẽ thiên hà cho bước 03 - Chọn cách chuyển style.
+- `fsmart/static/illustrations/pipeline-export.svg`: Khiên bảo mật xác thực dữ liệu và vòng quỹ đạo cho bước 04 - Kiểm tra và trả kết quả.
 - `fsmart/static/illustrations/sparkle.svg`: Ngôi sao 4 cánh gradient đa sắc biểu tượng của AI LumaNest.
 
 ---

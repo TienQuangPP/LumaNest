@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <radialGradient id="pip1-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#8b5cf6" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cube-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="cube-left" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="cube-right" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#312e81"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="50" fill="url(#pip1-glow)"/>
+  <!-- Isometric Cube / Vault Base -->
+  <polygon points="60,25 95,45 60,65 25,45" fill="url(#cube-top)" fill-opacity="0.8" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+  <polygon points="25,45 60,65 60,100 25,80" fill="url(#cube-left)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+  <polygon points="60,65 95,45 95,80 60,100" fill="url(#cube-right)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+  <!-- Ingest Ray & Floating Photo Badge -->
+  <path d="M60,15 L60,45" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3 3"/>
+  <circle cx="60" cy="15" r="4" fill="#38bdf8"/>
+  <polygon points="60,35 78,45 60,55 42,45" fill="#ffffff" fill-opacity="0.9"/>
+  <!-- Hologram Sparks -->
+  <path d="M98,28 L100,34 L106,36 L100,38 L98,44 L96,38 L90,36 L96,34 Z" fill="#06b6d4"/>
+  <path d="M22,60 L23.5,64 L27.5,65.5 L23.5,67 L22,71 L20.5,67 L16.5,65.5 L20.5,64 Z" fill="#a855f7"/>
+</svg>

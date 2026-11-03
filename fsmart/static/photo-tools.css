@@ -171,9 +171,18 @@
 }
 
 .picker-preview-media > span {
-  font-size: 70px;
-  color: var(--accent-violet);
-  opacity: 0.5;
+  font-size: 0;
+  width: 140px;
+  height: 100px;
+  background: url('/static/illustrations/aurora-picker.svg') center / contain no-repeat;
+  display: block;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 16px rgba(139, 92, 246, 0.4));
+  transition: transform var(--dur-base);
+}
+
+.picker-preview:hover .picker-preview-media > span {
+  transform: scale(1.08);
 }
 
 #picker-preview-name {

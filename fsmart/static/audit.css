@@ -160,22 +160,80 @@
 .pipeline-cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin: 20px 0 28px;
+  gap: 18px;
+  margin: 24px 0 32px;
+  perspective: 1200px;
 }
 
 .pipeline-step {
-  padding: 18px;
+  padding: 24px 20px;
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--surface-1);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--dur-fast), border-color var(--dur-fast);
+  box-shadow: var(--shadow-3d-card);
+  transform-style: preserve-3d;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--dur-base) var(--ease-spring),
+              border-color var(--dur-base),
+              box-shadow var(--dur-base);
+}
+
+.pipeline-step::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -80%;
+  width: 50%;
+  height: 200%;
+  background: var(--gradient-shimmer);
+  transform: rotate(25deg);
+  opacity: 0;
+  pointer-events: none;
+  transition: left 0.75s var(--ease-spring), opacity var(--dur-fast);
+}
+
+.pipeline-step:hover::after {
+  opacity: 0.8;
+  left: 140%;
 }
 
 .pipeline-step:hover {
-  border-color: var(--glass-border-hover);
-  transform: translateY(-2px);
+  border-color: var(--glass-border-active);
+  transform: perspective(800px) translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-3d-hover);
+}
+
+.pipeline-step::before {
+  content: "";
+  display: block;
+  width: 58px;
+  height: 58px;
+  background-size: contain;
+  background-position: left center;
+  background-repeat: no-repeat;
+  margin-bottom: 14px;
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+.pipeline-step:hover::before {
+  transform: scale(1.15) rotate(4deg);
+}
+
+.pipeline-step:nth-child(1)::before {
+  background-image: url('/static/illustrations/pipeline-import.svg');
+}
+
+.pipeline-step:nth-child(2)::before {
+  background-image: url('/static/illustrations/pipeline-ai.svg');
+}
+
+.pipeline-step:nth-child(3)::before {
+  background-image: url('/static/illustrations/pipeline-style.svg');
+}
+
+.pipeline-step:nth-child(4)::before {
+  background-image: url('/static/illustrations/pipeline-export.svg');
 }
 
 .pipeline-step b {

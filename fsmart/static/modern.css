@@ -180,6 +180,23 @@
   animation: star-gleam 0.9s var(--ease-spring) 1;
 }
 
+.favorite-star.is-favorite::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px dashed var(--star-gold);
+  opacity: 0.65;
+  animation: star-ring 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes star-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .photo-card {
   position: relative;
 }

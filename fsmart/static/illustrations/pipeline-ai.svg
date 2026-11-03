@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <radialGradient id="pip2-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ec4899" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#8b5cf6" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="60" cy="60" r="50" fill="url(#pip2-glow)"/>
+  <!-- Cyber HUD Reticle -->
+  <circle cx="60" cy="60" r="38" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.6"/>
+  <circle cx="60" cy="60" r="28" stroke="#ec4899" stroke-width="1" stroke-dasharray="2 4" opacity="0.8"/>
+  <!-- Viewfinder Brackets -->
+  <path d="M35 48 V38 H45" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M85 48 V38 H75" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M35 72 V82 H45" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M85 72 V82 H75" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Neural Face Wireframe & Nodes -->
+  <path d="M48 52 Q60 46 72 52 Q68 76 60 84 Q52 76 48 52 Z" fill="#1e1b4b" fill-opacity="0.6" stroke="#d946ef" stroke-width="1.5"/>
+  <circle cx="53" cy="56" r="3" fill="#06b6d4"/>
+  <circle cx="67" cy="56" r="3" fill="#06b6d4"/>
+  <circle cx="60" cy="66" r="2.5" fill="#f59e0b"/>
+  <path d="M54 74 Q60 78 66 74" stroke="#ec4899" stroke-width="2" stroke-linecap="round"/>
+  <!-- Laser Scanline -->
+  <line x1="32" y1="62" x2="88" y2="62" stroke="#38bdf8" stroke-width="1.5" opacity="0.9"/>
+  <!-- Sparkles -->
+  <circle cx="98" cy="40" r="2" fill="#ec4899"/>
+  <circle cx="24" cy="78" r="2.5" fill="#06b6d4"/>
+</svg>

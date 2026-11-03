@@ -337,11 +337,24 @@
 }
 
 .collection-tabs > button[aria-selected=true] {
-  color: var(--text);
+  color: var(--text-on-dark);
   border-color: var(--accent-violet);
-  background: rgba(139, 92, 246, 0.14);
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0.04) 100%);
   font-weight: 600;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px -2px rgba(139, 92, 246, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  position: relative;
+}
+
+.collection-tabs > button[aria-selected=true]::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: var(--gradient-brand);
+  box-shadow: 0 0 12px var(--accent-pink), 0 0 6px var(--accent-violet);
+  border-radius: 2px;
 }
 
 .collection-tabs > button:focus-visible {

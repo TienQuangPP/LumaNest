@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 160" fill="none">
+  <defs>
+    <radialGradient id="coll-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#ec4899" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="folder-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="50%" stop-color="#c026d3"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="photo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+  </defs>
+  <circle cx="110" cy="80" r="75" fill="url(#coll-glow)"/>
+  <!-- Orbiting Light Ring -->
+  <ellipse cx="110" cy="85" rx="90" ry="32" transform="rotate(-12 110 85)" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="4 6"/>
+  <!-- Floating Back Photo Card -->
+  <g transform="rotate(-14 80 75)">
+    <rect x="50" y="35" width="70" height="85" rx="10" fill="#141a35" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+    <rect x="56" y="41" width="58" height="52" rx="6" fill="#2e1065"/>
+    <circle cx="95" cy="55" r="6" fill="#f59e0b"/>
+    <path d="M60 85 L75 68 L88 80 L96 72 L108 85 Z" fill="#7c3aed"/>
+  </g>
+  <!-- Floating Front Photo Card -->
+  <g transform="rotate(10 135 80)">
+    <rect x="105" y="40" width="75" height="90" rx="10" fill="#101328" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+    <rect x="112" y="47" width="61" height="56" rx="6" fill="url(#photo-grad)"/>
+    <circle cx="128" cy="62" r="7" fill="#ec4899"/>
+    <path d="M118 95 L135 75 L150 88 L160 78 L170 95 Z" fill="#06b6d4"/>
+  </g>
+  <!-- Center Glowing Jewel Star / Plus -->
+  <g transform="translate(100, 60)">
+    <circle cx="10" cy="10" r="18" fill="url(#folder-grad)" filter="drop-shadow(0 4px 12px rgba(217,70,239,0.5))"/>
+    <path d="M10 4 V16 M4 10 H16" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <!-- Celestial Sparkles -->
+  <path d="M190 40 L192 46 L198 48 L192 50 L190 56 L188 50 L182 48 L188 46 Z" fill="#f59e0b"/>
+  <path d="M30 50 L31.5 54 L35.5 55.5 L31.5 57 L30 61 L28.5 57 L24.5 55.5 L28.5 54 Z" fill="#06b6d4"/>
+  <circle cx="180" cy="115" r="3" fill="#ec4899"/>
+  <circle cx="45" cy="110" r="2.5" fill="#8b5cf6"/>
+</svg>

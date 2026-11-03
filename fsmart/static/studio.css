@@ -146,7 +146,9 @@
 }
 
 .studio-tool-tabs button {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
   border: 0;
   background: transparent;
   padding: 9px 4px;
