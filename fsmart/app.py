@@ -925,6 +925,11 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
     def home():
         return FileResponse(static / 'index.html')
 
+    # Browsers ask for /favicon.ico on their own, whatever the page links.
+    @app.get('/favicon.ico', include_in_schema=False)
+    def favicon():
+        return FileResponse(static / 'lumanest.ico', media_type='image/x-icon')
+
     return app
 
 

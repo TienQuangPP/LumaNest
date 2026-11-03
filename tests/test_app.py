@@ -197,3 +197,10 @@ def test_detection_resize_does_not_reduce_alignment_source_resolution(tmp_path, 
     assert len(result) == 1 and result[0]['bbox'] == [480, 380, 570, 470]
     assert torch.equal(calls[1], torch.flip(calls[0], [3]))
     assert np.linalg.norm(result[0]['embedding']) == pytest.approx(1.)
+
+
+def test_favicon_is_served_for_browsers_that_ask_for_it(client):
+    response = client.get('/favicon.ico')
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'image/x-icon'
+    assert response.content[:4] == b'\x00\x00\x01\x00'  # ICO header
