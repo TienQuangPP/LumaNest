@@ -195,3 +195,12 @@ def test_free_tier_image_quota_and_timeouts_get_precise_messages(monkeypatch):
     def slow(*a,**k):raise requests.Timeout()
     with pytest.raises(ChatUnavailable) as caught:gemini.generate(slow,KEY,'gemini-3.8-flash','sys','hi',[])
     assert 'không phản hồi trong 60 giây' in str(caught.value) and caught.value.status_code==504
+
+
+def test_short_google_rate_limit_is_waited_out(monkeypatch):
+    import fsmart.gemini as gemini
+    waits=[]
+    monkeypatch.setattr(gemini.time,'sleep',waits.append)
+    busy={'error':{'code':429,'status':'RESOURCE_EXHAUSTED','message':'Resource exhausted','details':[{'retryDelay':'3s'}]}}
+    replies=[response(data=busy,status=429),response('ok')]
+    assert gemini.generate(lambda *a,**k:replies.pop(0),KEY,'gemini-3.5-flash-lite','sys','hi',[])=='ok' and waits==[3.0]

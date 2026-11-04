@@ -158,3 +158,43 @@ def test_api_plan_without_an_image_model_asks_for_one_instead_of_running_locally
         plan = client.post('/api/chat', json={'message': 'màu nước', 'mode': 'style', 'provider': 'compatible'}).json()['style_plan']
         refused = client.post('/api/stylize/from-chat', json={'photo_id': photo, 'plan_id': plan['id']})
         assert refused.status_code == 409 and 'model tạo ảnh' in refused.json()['detail'] and not client.app.state.models.calls
+
+
+def limited(message, retry=None):
+    r = response({'error': {'message': message, 'type': 'rate_limit_error'}}, 429)
+    if retry is not None:
+        r.headers['Retry-After'] = str(retry)
+    return r
+
+
+def test_short_rate_limits_wait_and_retry_then_succeed(monkeypatch):
+    waits = []
+    monkeypatch.setattr(compatible.time, 'sleep', waits.append)
+    fake = Fake([limited('Rate limit reached: 3 RPM', retry=2), limited('Rate limit reached: 3 RPM'), chat_reply('xong')])
+    s = service(fake); configure(s)
+    assert s.reply(ChatInput(message='hi', provider='compatible'))['reply'] == 'xong'
+    assert waits == [2.0, compatible.RATE_RETRIES[1]] and len(fake.calls) == 3
+
+
+def test_quota_429_is_not_retried_and_shows_the_provider_reason(monkeypatch):
+    monkeypatch.setattr(compatible.time, 'sleep', lambda s: None)
+    fake = Fake([limited(f'Insufficient balance for gpt-image-2, need 0.3 credit (key {KEY})')])
+    s = service(fake); configure(s)
+    with pytest.raises(ChatUnavailable) as caught:
+        s.reply(ChatInput(message='hi', provider='compatible'))
+    text = str(caught.value)
+    assert len(fake.calls) == 1 and 'hết hạn mức hoặc số dư' in text and 'Insufficient balance' in text and KEY not in text
+
+
+def test_persistent_or_long_rate_limits_are_reported_with_the_reason(monkeypatch):
+    waits = []
+    monkeypatch.setattr(compatible.time, 'sleep', waits.append)
+    fake = Fake([limited('Too many requests')] * 3)
+    s = service(fake); configure(s)
+    with pytest.raises(ChatUnavailable) as caught:
+        s.reply(ChatInput(message='hi', provider='compatible'))
+    assert len(fake.calls) == 3 and 'đã tự chờ và thử lại' in str(caught.value) and 'Too many requests' in str(caught.value)
+    fake.posts = [limited('Slow down', retry=120)]
+    with pytest.raises(ChatUnavailable):
+        s.reply(ChatInput(message='hi', provider='compatible'))
+    assert len(fake.calls) == 4  # a 2-minute Retry-After is reported, not slept through

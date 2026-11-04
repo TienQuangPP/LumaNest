@@ -40,7 +40,8 @@ def generate(post,key,model,instructions,message,history,schema=None):
 def _request(post,key,model,body,timeout=(5,60)):
     from .chat import ChatUnavailable
     if not key:raise ChatUnavailable('Chưa nhập Gemini API key. Mở Cài đặt trợ lý để kết nối hoặc chọn Qwen trên máy.',409)
-    for attempt in range(len(RETRY_DELAYS)+1):
+    rate_waits=0
+    for attempt in range(len(RETRY_DELAYS)+3):
         try:
             response=post(BASE_URL+model+':generateContent',headers={'x-goog-api-key':key,'Content-Type':'application/json'},
                           json=body,timeout=timeout,allow_redirects=False)
@@ -50,10 +51,23 @@ def _request(post,key,model,body,timeout=(5,60)):
         except requests.RequestException as error:
             log.warning('Gemini %s connection failed: %s',model,type(error).__name__)
             raise ChatUnavailable('Không kết nối được Gemini. Kiểm tra Internet rồi thử lại.') from None
-        if response.status_code not in TRANSIENT or attempt==len(RETRY_DELAYS):break
-        log.warning('Gemini %s returned HTTP %s; retrying (%s/%s)',model,response.status_code,attempt+1,len(RETRY_DELAYS))
-        time.sleep(RETRY_DELAYS[attempt])
+        if response.status_code==429:
+            status,message,delay=_google_error(response,key)
+            seconds=_seconds(delay)
+            if rate_waits==2 or 'limit: 0' in message.lower() or 'free_tier' in message.lower() or seconds is None or seconds>20:break
+            log.warning('Gemini %s rate limited; waiting %ss as Google asked',model,seconds)
+            rate_waits+=1;time.sleep(max(seconds,.5));continue
+        tries=attempt-rate_waits
+        if response.status_code not in TRANSIENT or tries>=len(RETRY_DELAYS):break
+        log.warning('Gemini %s returned HTTP %s; retrying (%s/%s)',model,response.status_code,tries+1,len(RETRY_DELAYS))
+        time.sleep(RETRY_DELAYS[tries])
     return _decode_response(response,key,model)
+
+
+def _seconds(delay):
+    """Google's retryDelay ('37s', '1.5s') as a float, or None."""
+    try:return float(str(delay).rstrip('s')) if delay else None
+    except ValueError:return None
 
 
 def _google_error(response,key=''):
@@ -79,7 +93,8 @@ def _decode_response(response,key='',model=''):
         if 'limit: 0' in lowered or 'free_tier' in lowered or 'billing' in lowered:
             raise ChatUnavailable(f'Tài khoản Google của bạn không có hạn mức miễn phí cho model {model or "này"} (mã 429). Model vẽ ảnh của Gemini cần bật thanh toán trong Google AI Studio; hoặc chọn nguồn VietAPI với model ảnh gpt-image-2.',429)
         wait=f' Google gợi ý chờ {delay}.' if delay else ''
-        raise ChatUnavailable(f'Gemini báo hết lượt gọi cho model {model or "này"} (mã 429).{wait} Thử lại sau, đổi model khác, hoặc chọn nguồn khác.',429)
+        reason=f' Lý do từ Google: “{" ".join(message.split())[:200]}”.' if message else ''
+        raise ChatUnavailable(f'Gemini báo hết lượt gọi cho model {model or "này"} (mã 429) sau khi app đã tự chờ và thử lại.{wait}{reason} Thử lại sau, đổi model khác, hoặc chọn nguồn khác.',429)
     if response.status_code in {400,404}:raise ChatUnavailable('Gemini không chấp nhận key hoặc model/cấu hình. Kiểm tra key, model và quyền truy cập của tài khoản.',502)
     if response.status_code==503:raise ChatUnavailable('Gemini đang quá tải (mã 503), đã tự thử lại 3 lần. Đợi một lát, đổi sang model Gemini khác trong Cài đặt trợ lý, hoặc chọn Qwen.',502)
     if response.status_code!=200:raise ChatUnavailable(f'Gemini chưa trả lời được (mã {response.status_code}), đã tự thử lại. Thử lại sau hoặc chọn Qwen.',502)
