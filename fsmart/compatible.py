@@ -46,7 +46,11 @@ def _send(method, url, key, *, label, timeout, **kwargs):
     for attempt in range(len(RETRY_DELAYS) + 1):
         try:
             response = method(url, headers=headers, timeout=timeout, allow_redirects=False, **kwargs)
-        except requests.RequestException:
+        except requests.Timeout:
+            log.warning('%s timed out after %ss', label, timeout[1])
+            raise _unavailable(f'{label} không phản hồi trong {timeout[1]} giây. Model có thể đang quá tải; thử lại hoặc chọn model khác.', 504) from None
+        except requests.RequestException as error:
+            log.warning('%s connection failed: %s', label, type(error).__name__)
             raise _unavailable(f'Không kết nối được {label}. Kiểm tra Internet và Base URL rồi thử lại.', 503) from None
         if response.status_code not in TRANSIENT or attempt == len(RETRY_DELAYS):
             break
@@ -54,7 +58,12 @@ def _send(method, url, key, *, label, timeout, **kwargs):
         time.sleep(RETRY_DELAYS[attempt])
     code = response.status_code
     if code != 200:
-        log.warning('%s returned HTTP %s', label, code)
+        try:  # provider detail goes to the server log only (key masked); users get a classified message
+            error = response.json().get('error', {})
+            detail = str(error.get('message', error) if isinstance(error, dict) else error)[:300].replace(key, '[key]')
+        except (ValueError, AttributeError, TypeError):
+            detail = ''
+        log.warning('%s %s returned HTTP %s: %s', label, url.rsplit('/', 1)[-1], code, detail)
     if code in {401, 403}:
         raise _unavailable(f'{label} từ chối API key (mã {code}). Kiểm tra key và số dư tài khoản.')
     if code == 402:

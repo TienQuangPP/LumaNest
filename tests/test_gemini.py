@@ -180,3 +180,18 @@ def test_client_errors_are_not_retried(monkeypatch):
     def post(*a,**k):calls.append(1);return response(status=400)
     with pytest.raises(ChatUnavailable):gemini.generate(post,KEY,'gemini-3.8-flash','sys','hi',[])
     assert len(calls)==1
+
+
+def test_free_tier_image_quota_and_timeouts_get_precise_messages(monkeypatch):
+    import fsmart.gemini as gemini
+    from PIL import Image
+    quota={'error':{'code':429,'status':'RESOURCE_EXHAUSTED','message':f'Quota exceeded for metric generate_content_free_tier_requests, limit: 0, model: gemini-3.1-flash-lite-image {KEY}'}}
+    with pytest.raises(ChatUnavailable) as caught:
+        gemini.edit_image(lambda *a,**k:response(data=quota,status=429),KEY,'gemini-3.1-flash-lite-image',Image.new('RGB',(8,8)),'paint')
+    assert 'không có hạn mức miễn phí' in str(caught.value) and 'gpt-image-2' in str(caught.value) and KEY not in str(caught.value)
+    busy={'error':{'code':429,'status':'RESOURCE_EXHAUSTED','message':'Resource exhausted','details':[{'@type':'type.googleapis.com/google.rpc.RetryInfo','retryDelay':'37s'}]}}
+    with pytest.raises(ChatUnavailable) as caught:gemini.generate(lambda *a,**k:response(data=busy,status=429),KEY,'gemini-3.8-flash','sys','hi',[])
+    assert 'chờ 37s' in str(caught.value) and caught.value.status_code==429
+    def slow(*a,**k):raise requests.Timeout()
+    with pytest.raises(ChatUnavailable) as caught:gemini.generate(slow,KEY,'gemini-3.8-flash','sys','hi',[])
+    assert 'không phản hồi trong 60 giây' in str(caught.value) and caught.value.status_code==504
