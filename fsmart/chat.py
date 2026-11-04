@@ -14,7 +14,7 @@ import requests
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
 from .images import decode_image
-from .style_plans import API_DIRECT_INSTRUCTIONS, IMAGE_MODELS, STYLE_INSTRUCTIONS, api_edit_prompt, api_style_prompt, STYLE_SUGGESTIONS, StylePlanCache, StyleRecipe, is_style_request, local_recipe
+from .style_plans import API_DIRECT_INSTRUCTIONS, IMAGE_MODELS, STYLE_INSTRUCTIONS, api_edit_prompt, api_redraw_prompt, api_style_prompt, STYLE_SUGGESTIONS, StylePlanCache, StyleRecipe, is_style_request, local_recipe
 from . import compatible
 from .gemini import DEFAULT_MODEL as GEMINI_MODEL,edit_image as gemini_edit_image,generate as gemini_generate,generate_image as gemini_generate_image,normalize_key
 
@@ -158,6 +158,8 @@ class CompatibleConfigInput(CompatibleModelsInput):
     model: str = Field(pattern=compatible.MODEL_PATTERN)
     image_model: str = Field(default='', pattern='^$|'+compatible.MODEL_PATTERN[1:])
     label: str = Field(default='API tùy chỉnh', min_length=1, max_length=40, pattern=r'^[^<>\x00-\x1f]+$')
+    # edit: send the photo to /images/edits; redraw: a vision model describes it, /images/generations paints the scene
+    image_mode: Literal['auto','edit','redraw'] = 'auto'
 
 
 class ChatUnavailable(Exception):
@@ -286,6 +288,7 @@ class ChatService:
                     'compatible_configured':bool(self._compat['key']),'compatible_base_url':self._compat['base'],
                     'compatible_model':self._compat['model'],'compatible_image_model':self._compat['image_model'],
                     'compatible_label':self._compat['label'],'compatible_verified':self._compat['verified'],'compatible_note':self._compat.get('note',''),
+                    'compatible_image_mode':self._compat.get('image_mode','edit'),
                     'api_model': self._model,'gemini_model':self._gemini_model,'gemini_configured':bool(self._gemini_key),
                     'gemini_image_model':self._gemini_image_model,
                     'gemini_verified':self._gemini_verified,
@@ -350,15 +353,22 @@ class ChatService:
         if not key:raise ChatUnavailable('Nhập API key của nhà cung cấp rồi bấm Lưu.',409)
         # /models is free to call, so use it as the check. Some endpoints (Claude's compatibility layer, small gateways)
         # don't list models for this auth style, so a failed listing is reported but never blocks the save.
+        models = []
         try:
             models = compatible.list_models(self._get,payload.base_url,key,label)
             verified = payload.model in models
             note = '' if verified else f'Đã kết nối {label}, nhưng danh sách model không có "{payload.model}". Kiểm tra lại tên model nếu chat báo lỗi.'
         except ChatUnavailable as error:
             verified, note = False, f'Chưa xác minh được qua danh sách model: {error} Key sẽ được kiểm tra khi gửi câu hỏi đầu tiên.'
+        image_models = [m for m in models if compatible.is_image_model(m)]
+        if payload.image_model and image_models and payload.image_model not in image_models:
+            raise ChatUnavailable(f'"{payload.image_model}" không phải model vẽ ảnh của {label}. Chọn một trong: {", ".join(image_models[:6])}.',422)
+        mode = payload.image_mode
+        if mode == 'auto':
+            mode = 'redraw' if 'vietapi' in payload.base_url.lower() else 'edit'  # VietAPI only offers /images/generations
         with self._lock:
             self._compat={'base':payload.base_url,'key':key,'model':payload.model,'image_model':payload.image_model,
-                          'label':label,'verified':verified,'note':note}
+                          'label':label,'verified':verified,'note':note,'image_mode':mode,'models':models}
             self._provider='compatible'
         return self.status()
 
@@ -551,7 +561,8 @@ Không khẳng định đã tạo ảnh. Đây chỉ là đề xuất. Chỉ dù
             if recipe.engine=='reference':plan['api_provider']=image_provider
             if direct:
                 label,image_model=self.image_label(provider)
-                plan.update(direct=True,requires_api_key=True,api_label=label,image_model=image_model)
+                plan.update(direct=True,requires_api_key=True,api_label=label,image_model=image_model,
+                            image_mode=self._compat.get('image_mode','edit') if provider=='compatible' else 'edit')
             if recipe.engine=='artwork':
                 from .artworks import ARTWORK
                 plan.update(reference_image_url='/api/style-artworks/van-gogh/image',source_url=ARTWORK['source_url'])
@@ -589,20 +600,34 @@ Không khẳng định đã tạo ảnh. Đây chỉ là đề xuất. Chỉ dù
             if provider=='compatible':return self._compat['label'],self._compat['image_model']
             return 'OpenAI',self._image_model
 
-    def edit_photo(self, image, recipe, provider):
-        """The chosen API image model repaints the photo itself; nothing runs locally except resizing."""
+    def edit_photo(self, image, recipe, provider, progress=lambda message: None):
+        """The chosen API repaints the photo itself; nothing runs locally except resizing."""
         self.require_image_key(provider)
         with self._lock:
+            mode='edit'
             if provider=='gemini':key,model,base,label=self._gemini_key,self._gemini_image_model,'','Gemini'
-            elif provider=='compatible':key,model,base,label=self._compat['key'],self._compat['image_model'],self._compat['base'],self._compat['label']
+            elif provider=='compatible':
+                key,model,base,label=self._compat['key'],self._compat['image_model'],self._compat['base'],self._compat['label']
+                mode,chat_model,models=self._compat.get('image_mode','edit'),self._compat['model'],self._compat.get('models',[])
             else:key,model,base,label=self._key,self._image_model,'https://api.openai.com/v1','OpenAI'
         if not self._busy.acquire(blocking=False):
             raise ChatUnavailable('API ảnh đang xử lý yêu cầu khác. Hãy thử lại sau một chút.', 429)
         try:
             source=image.copy();source.thumbnail((1536,1536))
-            prompt=api_edit_prompt(recipe)
-            if provider=='gemini':return gemini_edit_image(self._post,key,model,source,prompt)
-            return compatible.edit_image(self._post,self._get,base,key,model,source,prompt,label)
+            if provider=='gemini':return gemini_edit_image(self._post,key,model,source,api_edit_prompt(recipe))
+            if mode!='redraw':return compatible.edit_image(self._post,self._get,base,key,model,source,api_edit_prompt(recipe),label)
+            # Gateway without /images/edits (VietAPI): its vision chat model describes the photo, its image model paints the scene.
+            candidates=[chat_model]+[m for m in compatible.VISION_FALLBACKS if m!=chat_model and (not models or m in models)]
+            scene,last=None,None
+            for vision in candidates[:3]:
+                progress(f'{label} · {vision} đang xem ảnh để mô tả cảnh…')
+                try:scene=compatible.describe_image(self._post,base,key,vision,source,label);break
+                except ChatUnavailable as error:
+                    last=error
+                    if error.status_code==429:raise
+            if scene is None:raise last
+            progress(f'{label} · {model} đang vẽ lại toàn bộ cảnh theo phong cách…')
+            return compatible.generate_image(self._post,self._get,base,key,model,api_redraw_prompt(recipe,scene)[:3800],label,compatible.size_for(source))
         finally:
             self._busy.release()
 

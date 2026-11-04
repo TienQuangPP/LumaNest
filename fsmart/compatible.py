@@ -10,6 +10,11 @@ import requests
 
 MODEL_PATTERN = r'^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$'
 QUOTA_WORDS = ('quota', 'insufficient', 'balance', 'credit', 'billing', 'limit: 0', 'số dư', '余额', '额度')
+IMAGE_MODEL_PATTERN = re.compile(r'image|dall-?e|imagen|flux|banana|stable-?diffusion|sdxl|midjourney|seedream|recraft|ideogram', re.I)
+VISION_FALLBACKS = ('claude-sonnet-5.5', 'claude-sonnet-5', 'gpt-6-sol', 'gpt-5.6-luna', 'gemini-4-argon', 'gpt-4o', 'claude-sonnet-4')
+DESCRIBE_PROMPT = ('Describe this photo for a painter who must repaint the same scene without seeing it. In English, 120-180 words: '
+                   'how many people and where they stand, poses, gestures, facial expressions, hair, clothing and colours, objects, '
+                   'background, lighting, camera angle and composition. Do not name or guess who anyone is. Plain prose only.')
 RATE_RETRIES = (5.0, 12.0)  # short rate-limit waits honoured automatically; longer ones are reported
 MAX_RATE_WAIT = 20.0
 TRANSIENT = {500, 502, 503, 504}
@@ -167,9 +172,38 @@ def json_object(text):
     return json.JSONDecoder().raw_decode(text[start:])[0]
 
 
-def generate_image(post, get, base_url, key, model, prompt, label='API'):
+def is_image_model(name):
+    return bool(IMAGE_MODEL_PATTERN.search(name or ''))
+
+
+def size_for(image):
+    """The gpt-image canvas closest to the photo's shape."""
+    ratio = image.width / max(1, image.height)
+    return '1536x1024' if ratio > 1.15 else '1024x1536' if ratio < .87 else '1024x1024'
+
+
+def describe_image(post, base_url, key, model, image, label='API'):
+    """A vision chat model's description of the photo (sent as a data URL, max 1024 px)."""
+    import io
+    preview = image.copy(); preview.thumbnail((1024, 1024))
+    buffer = io.BytesIO(); preview.save(buffer, 'JPEG', quality=88)
+    url = 'data:image/jpeg;base64,' + base64.b64encode(buffer.getvalue()).decode()
+    body = {'model': model, 'max_tokens': 500, 'temperature': .2, 'stream': False,
+            'messages': [{'role': 'user', 'content': [{'type': 'text', 'text': DESCRIBE_PROMPT},
+                                                      {'type': 'image_url', 'image_url': {'url': url}}]}]}
+    data = _send(post, base_url + '/chat/completions', key, label=label, timeout=(5, 120), json=body)
+    try:
+        text = re.sub(r'<think>.*?</think>', '', _content_text(data['choices'][0]['message'].get('content')), flags=re.S).strip()
+    except (KeyError, IndexError, TypeError, AttributeError):
+        text = ''
+    if len(text) < 40 or re.search(r"(can't|cannot|unable to) (see|view|access)|no image", text, re.I):
+        raise _unavailable(f'Model {model} của {label} không đọc được ảnh (có thể không hỗ trợ ảnh đầu vào).')
+    return ' '.join(text.split())[:1500]
+
+
+def generate_image(post, get, base_url, key, model, prompt, label='API', size='1024x1024'):
     from .images import decode_image
-    body = {'model': model, 'prompt': prompt, 'n': 1, 'size': '1024x1024'}
+    body = {'model': model, 'prompt': prompt, 'n': 1, 'size': size}
     data = _send(post, base_url + '/images/generations', key, label=label, timeout=(5, 180), json=body)
     try:
         return decode_image(_image_bytes(get, data), 4_194_304)

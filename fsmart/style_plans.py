@@ -42,6 +42,12 @@ def api_style_prompt(recipe):
     return PRESET_PROMPTS.get(recipe.preset, recipe.title)
 
 
+def api_redraw_prompt(recipe, scene):
+    return ('Paint this scene as an artwork in this style: ' + api_style_prompt(recipe) + '. '
+            f'Style intensity about {round(recipe.strength * 100)}%. Keep the people, poses, clothing colours, objects, '
+            'background and composition described here. No added text, logos, borders or watermarks.\nScene: ' + scene)
+
+
 def api_edit_prompt(recipe):
     return ('Repaint this exact photo as an artwork in this style: ' + api_style_prompt(recipe) + '. '
             f'Style intensity about {round(recipe.strength * 100)}% (lower keeps more of the original photo). '

@@ -49,7 +49,7 @@
     $('gemini-config-status').classList.remove('config-error');
     if(status.compatible_configured){
       $('compatible-base').value=status.compatible_base_url;$('compatible-label').value=status.compatible_label;
-      $('compatible-model').value=status.compatible_model;$('compatible-image-model').value=status.compatible_image_model||'';
+      $('compatible-model').value=status.compatible_model;$('compatible-image-model').value=status.compatible_image_model||'';$('compatible-image-mode').value=status.compatible_image_mode||'auto';
       const preset=[...$('compatible-preset').options].find(option=>option.value&&option.value===status.compatible_base_url);$('compatible-preset').value=preset?preset.value:'';
     }
     $('compatible-clear').disabled=chat.pending||!status.compatible_configured;
@@ -92,7 +92,7 @@
     $('chat-save-key').disabled = value;
     $('chat-clear-key').disabled = value || !chat.status?.image_configured;
     $('chat-source').disabled=value;$('gemini-save-key').disabled=value;$('gemini-clear-key').disabled=value||!chat.status?.gemini_configured;
-    for(const id of ['gemini-key','gemini-model','gemini-image-model','chat-settings-done','compatible-preset','compatible-base','compatible-label','compatible-key','compatible-model','compatible-image-model','compatible-fetch','compatible-save'])$(id).disabled=value;
+    for(const id of ['gemini-key','gemini-model','gemini-image-model','chat-settings-done','compatible-preset','compatible-base','compatible-label','compatible-key','compatible-model','compatible-image-model','compatible-image-mode','compatible-fetch','compatible-save'])$(id).disabled=value;
     $('compatible-clear').disabled=value||!chat.status?.compatible_configured;
     $('gemini-key-form').setAttribute('aria-busy',String(value));
     $('chat-form').setAttribute('aria-busy', String(value));
@@ -123,9 +123,11 @@
     card.append(el('small', 'chat-plan-eyebrow', 'ĐỀ XUẤT PHONG CÁCH'), el('strong', '', plan.title));
     const preset = state.styles.find(style => style.id === plan.preset)?.name || plan.preset;
     const providerName=plan.api_provider==='gemini'?'Gemini':plan.api_provider==='compatible'?(chat.status?.compatible_label||'API tùy chỉnh'):'OpenAI';
-    const route = plan.direct ? `${plan.api_label||providerName} vẽ lại ảnh bằng ${plan.image_model||'model ảnh'} · không dùng model trên máy` : plan.engine === 'reference' ? `${providerName} tạo ảnh tham chiếu → VGG19 · ${plan.steps} bước` : plan.engine==='artwork' ? `Tranh có sẵn → VGG19 · ${plan.steps} bước · trên máy` : `${preset} · chạy NST trên máy`;
+    const redraw = plan.direct && plan.image_mode==='redraw';
+    const route = redraw ? `${plan.api_label||providerName} xem ảnh rồi vẽ lại toàn bộ cảnh bằng ${plan.image_model} · không dùng model trên máy` : plan.direct ? `${plan.api_label||providerName} vẽ lại ảnh bằng ${plan.image_model||'model ảnh'} · không dùng model trên máy` : plan.engine === 'reference' ? `${providerName} tạo ảnh tham chiếu → VGG19 · ${plan.steps} bước` : plan.engine==='artwork' ? `Tranh có sẵn → VGG19 · ${plan.steps} bước · trên máy` : `${preset} · chạy NST trên máy`;
     card.append(el('p', '', `${route}\nĐộ đậm ${Math.round(plan.strength*100)}%`));
-    if (plan.direct) card.append(el('p', 'chat-plan-cost', `Khi bấm tạo, ảnh bạn chọn (thu nhỏ tối đa 1536 px) được gửi tới ${plan.api_label||providerName} để vẽ lại. Có thể tốn phí API ảnh.`));
+    if (redraw) card.append(el('p', 'chat-plan-cost', `Khi bấm tạo, ảnh (tối đa 1024 px) được gửi tới ${plan.api_label||providerName} để model chat mô tả cảnh, rồi ${plan.image_model} vẽ lại từ mô tả. Người và khuôn mặt trong ảnh mới sẽ khác ảnh gốc. Tốn phí 1 ảnh API.`));
+    else if (plan.direct) card.append(el('p', 'chat-plan-cost', `Khi bấm tạo, ảnh bạn chọn (thu nhỏ tối đa 1536 px) được gửi tới ${plan.api_label||providerName} để vẽ lại. Có thể tốn phí API ảnh.`));
     else if (plan.engine === 'reference') card.append(el('p', 'chat-plan-cost', 'Dùng hạn mức API ảnh khi bấm tạo. Chỉ gửi mô tả; ảnh gốc ở trên máy.'));
     if(plan.engine==='artwork'){const image=el('img','chat-reference');image.src=plan.reference_image_url;image.alt='Tranh tham chiếu Van Gogh';card.append(image);const source=el('a','text-button','Tranh public domain · The Met ↗');source.href=plan.source_url;source.target='_blank';source.rel='noopener noreferrer';card.append(source);}
     const label = el('label', '', 'Ảnh để tạo tác phẩm');
@@ -153,7 +155,7 @@
       const photo = findPhotoById(select.value);
       if (!photo) { status.textContent = 'Chọn một ảnh trong danh sách trước. Nếu chưa có ảnh, thêm ảnh vào Thư viện.'; return; }
       setPending(true);
-      status.textContent = plan.direct ? `Đang gửi ảnh tới ${plan.api_label||providerName} · ${plan.image_model}. Model API đang vẽ lại, thường 10–60 giây…` : plan.engine === 'reference' ? 'Đang tạo ảnh phong cách rồi chuyển style. Có thể mất vài phút.' : 'Đang tạo tác phẩm bằng model NST…';
+      status.textContent = redraw ? `${plan.api_label||providerName} đang xem ảnh rồi vẽ lại bằng ${plan.image_model}, thường 20–90 giây…` : plan.direct ? `Đang gửi ảnh tới ${plan.api_label||providerName} · ${plan.image_model}. Model API đang vẽ lại, thường 10–60 giây…` : plan.engine === 'reference' ? 'Đang tạo ảnh phong cách rồi chuyển style. Có thể mất vài phút.' : 'Đang tạo tác phẩm bằng model NST…';
       try {
         const result = await createFromStyleRecipe(plan, photo);
         status.textContent = plan.direct ? `${plan.api_label||providerName} đã vẽ xong${result.seconds?` sau ${Math.round(result.seconds)} giây`:''}. Xem trước/sau trong Phòng sáng tạo.` : 'Đã tạo xong. Xem trước/sau trong Phòng sáng tạo.';
@@ -337,8 +339,13 @@
     setPending(true);compatibleReport('Đang lấy danh sách model…',false);
     try{
       const result=await api('/api/chat/compatible/models',jsonRequest({base_url:base,...(key?{api_key:key}:{})}));
-      $('compatible-models').replaceChildren(...result.models.map(id=>{const option=el('option');option.value=id;return option;}));
-      compatibleReport(result.models.length?`Có ${result.models.length} model. Bấm vào ô Model chat để chọn hoặc gõ để lọc.`:'Nhà cung cấp không liệt kê model nào. Nhập tên model bằng tay.',!result.models.length);
+      const imagePattern=/image|dall-?e|imagen|flux|banana|stable-?diffusion|sdxl|midjourney|seedream|recraft|ideogram/i;
+      const option=id=>{const node=el('option');node.value=id;return node;};
+      const imageModels=result.models.filter(id=>imagePattern.test(id));
+      $('compatible-models').replaceChildren(...result.models.filter(id=>!imagePattern.test(id)&&!/^tts-/.test(id)).map(option));
+      $('compatible-image-models').replaceChildren(...imageModels.map(option));
+      if(imageModels.length&&!imagePattern.test($('compatible-image-model').value))$('compatible-image-model').value=imageModels[0];
+      compatibleReport(result.models.length?`Có ${result.models.length} model${imageModels.length?`, trong đó ${imageModels.length} model vẽ ảnh (${imageModels.join(', ')})`:''}. Bấm vào ô Model chat để chọn hoặc gõ để lọc.`:'Nhà cung cấp không liệt kê model nào. Nhập tên model bằng tay.',!result.models.length);
       if(result.models.length)$('compatible-model').focus();
     }catch(error){compatibleReport(error.message);}
     finally{setPending(false);}
@@ -351,7 +358,7 @@
     if(!model){compatibleReport('Nhập hoặc chọn model chat.');$('compatible-model').focus();return;}
     setPending(true);$('compatible-save').textContent='Đang kiểm tra…';compatibleReport('Đang kiểm tra kết nối (chỉ đọc danh sách model, không tốn credit)…',false);
     let result;
-    try{result=await api('/api/chat/compatible/config',jsonRequest({base_url:base,model,image_model:imageModel,label,...(key?{api_key:key}:{})}));}
+    try{result=await api('/api/chat/compatible/config',jsonRequest({base_url:base,model,image_model:imageModel,label,image_mode:$('compatible-image-mode').value,...(key?{api_key:key}:{})}));}
     catch(error){compatibleReport(error.message);}
     finally{$('compatible-key').value='';setPending(false);$('compatible-save').textContent='Lưu và dùng';}
     if(result){resetChat();renderStatus(result);message('assistant',`Đã chuyển sang ${result.compatible_label} · ${result.compatible_model}. Văn bản chat sẽ gửi tới nhà cung cấp này.`,result.compatible_label);}

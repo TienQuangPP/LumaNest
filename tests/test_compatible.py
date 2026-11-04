@@ -134,7 +134,7 @@ def test_van_gogh_with_an_api_source_is_painted_by_that_api_not_locally(tmp_path
     artwork = {'reply': 'Dùng tranh Van Gogh.', 'title': 'Van Gogh', 'engine': 'artwork', 'preset': 'candy',
                'strength': .7, 'steps': 50, 'reference_prompt': 'met:436535'}  # what a planner may still answer
     fake = Fake([chat_reply(json.dumps(artwork)), response({'data': [{'b64_json': base64.b64encode(png('green')).decode()}]})])
-    s = service(fake); configure(s, image_model='gpt-image-2')
+    s = service(fake); configure(s, image_model='gpt-image-2', image_mode='edit')
     app = create_app(Settings(data_dir=tmp_path / 'runtime', weights_dir=tmp_path / 'weights'), StyleModels(), s)
     with TestClient(app) as client:
         photo = upload(client)
@@ -198,3 +198,36 @@ def test_persistent_or_long_rate_limits_are_reported_with_the_reason(monkeypatch
     with pytest.raises(ChatUnavailable):
         s.reply(ChatInput(message='hi', provider='compatible'))
     assert len(fake.calls) == 4  # a 2-minute Retry-After is reported, not slept through
+
+
+def test_vietapi_redraws_the_whole_scene_from_a_vision_description(tmp_path):
+    """VietAPI has no /images/edits: its vision chat model describes the photo, gpt-image paints it; nothing local."""
+    from test_style_chat import StyleModels, upload, wait_job, png
+    recipe = {'reply': 'Vẽ lại kiểu Van Gogh.', 'title': 'Van Gogh', 'engine': 'reference', 'preset': 'candy',
+              'strength': .7, 'steps': 50, 'reference_prompt': 'Van Gogh swirling impasto, cobalt and gold'}
+    scene = 'Four young people stand in a row on a stage holding paper signs, purple lights behind them, smiling at the camera.'
+    fake = Fake([chat_reply(json.dumps(recipe)),
+                 response({'choices': [{'message': {'content': 'I cannot see images.'}}]}),  # chat model without vision
+                 chat_reply(scene),                                                          # vision fallback
+                 response({'data': [{'b64_json': base64.b64encode(png('green')).decode()}]})],
+                models=('glm-5.2', 'claude-sonnet-5.5', 'gpt-image-2', 'gpt-image-2.5'))
+    s = service(fake)
+    with pytest.raises(ChatUnavailable) as caught:  # a chat model in the image slot is refused up front
+        s.configure_compatible(CompatibleConfigInput(base_url='https://api.vietapi.tech/v1', api_key=KEY, model='glm-5.2', image_model='glm-5.2', label='VietAPI'))
+    assert 'không phải model vẽ ảnh' in str(caught.value) and 'gpt-image-2' in str(caught.value)
+    state = s.configure_compatible(CompatibleConfigInput(base_url='https://api.vietapi.tech/v1', api_key=KEY, model='glm-5.2', image_model='gpt-image-2', label='VietAPI'))
+    assert state['compatible_image_mode'] == 'redraw'
+    app = create_app(Settings(data_dir=tmp_path / 'runtime', weights_dir=tmp_path / 'weights'), StyleModels(), s)
+    with TestClient(app) as client:
+        photo = upload(client)
+        plan = client.post('/api/chat', json={'message': 'phong cách van gogh', 'mode': 'style', 'provider': 'compatible'}).json()['style_plan']
+        job = wait_job(client, client.post('/api/stylize/from-chat', json={'photo_id': photo, 'plan_id': plan['id']}).json()['job_id'])
+        assert job['status'] == 'done' and job['result']['provider'] == 'VietAPI', job
+        urls = [c[0] for c in fake.calls]
+        assert urls == ['https://api.vietapi.tech/v1/chat/completions'] * 3 + ['https://api.vietapi.tech/v1/images/generations']
+        first, second = fake.calls[1][1]['json'], fake.calls[2][1]['json']
+        assert first['model'] == 'glm-5.2' and second['model'] == 'claude-sonnet-5.5'
+        assert second['messages'][0]['content'][1]['image_url']['url'].startswith('data:image/jpeg;base64,')
+        body = fake.calls[3][1]['json']
+        assert body['model'] == 'gpt-image-2' and scene in body['prompt'] and 'Van Gogh' in body['prompt'] and body['size'] in {'1536x1024', '1024x1536', '1024x1024'}
+        assert client.app.state.models.calls == [] and '/images/edits' not in ' '.join(urls)

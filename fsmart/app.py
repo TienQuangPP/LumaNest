@@ -651,7 +651,7 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
             store.update_job(job_id, 'running', .1, f'Đang gửi ảnh tới {label} · {image_model}; model API đang vẽ lại ảnh…')
             with Image.open(settings.data_dir / 'photos' / f'{photo_id}.jpg') as source:
                 image = source.convert('RGB')
-            output = chat.edit_photo(image, recipe, provider)
+            output = chat.edit_photo(image, recipe, provider, lambda message: store.update_job(job_id, 'running', .4, message))
             store.update_job(job_id, 'running', .9, f'{label} đã trả ảnh, đang lưu')
             details = {'profile': 'api', 'engine': 'api', 'provider': label, 'model': image_model, 'strength': recipe.strength}
             output_id = save_output(store, settings, output, photo_id, 'custom', recipe.title, details)

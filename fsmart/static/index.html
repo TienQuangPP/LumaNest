@@ -4,12 +4,12 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#060713"><meta name="description" content="LumaNest: thư viện ảnh AI riêng tư, tìm khuôn mặt và sáng tạo nghệ thuật trên máy."><title>LumaNest — AI Photo Studio</title>
   <link rel="icon" type="image/svg+xml" href="/static/lumanest.svg">
-  <script src="/static/theme.js?v=20261104-api"></script>
-  <link rel="stylesheet" href="/static/fonts.css?v=20261104-api">
-  <link rel="stylesheet" href="/static/theme.css?v=20261104-api">
-  <link rel="stylesheet" href="/static/style.css?v=20261104-api"><link rel="stylesheet" href="/static/bulk.css?v=20261104-api"><link rel="stylesheet" href="/static/search.css?v=20261104-api"><link rel="stylesheet" href="/static/chat.css?v=20261104-api"><link rel="stylesheet" href="/static/audit.css?v=20261104-api"><link rel="stylesheet" href="/static/collections.css?v=20261104-api"><link rel="stylesheet" href="/static/photo-tools.css?v=20261104-api">
-  <link rel="stylesheet" href="/static/modern.css?v=20261104-api"><link rel="stylesheet" href="/static/studio.css?v=20261104-api"><link rel="stylesheet" href="/static/viewer.css?v=20261104-api"><link rel="stylesheet" href="/static/comfort.css?v=20261104-api">
-  <script src="/static/app.js?v=20261104-api" defer></script><script src="/static/photo-picker.js?v=20261104-api" defer></script><script src="/static/search.js?v=20261104-api" defer></script><script src="/static/style-chat.js?v=20261104-api" defer></script><script src="/static/chat.js?v=20261104-api" defer></script><script src="/static/bulk.js?v=20261104-api" defer></script><script src="/static/workspace.js?v=20261104-api" defer></script><script src="/static/system.js?v=20261104-api" defer></script><script src="/static/photo-actions.js?v=20261104-api" defer></script><script src="/static/modern.js?v=20261104-api" defer></script><script src="/static/studio.js?v=20261104-api" defer></script><script src="/static/collections.js?v=20261104-api" defer></script>
+  <script src="/static/theme.js?v=20261104-api2"></script>
+  <link rel="stylesheet" href="/static/fonts.css?v=20261104-api2">
+  <link rel="stylesheet" href="/static/theme.css?v=20261104-api2">
+  <link rel="stylesheet" href="/static/style.css?v=20261104-api2"><link rel="stylesheet" href="/static/bulk.css?v=20261104-api2"><link rel="stylesheet" href="/static/search.css?v=20261104-api2"><link rel="stylesheet" href="/static/chat.css?v=20261104-api2"><link rel="stylesheet" href="/static/audit.css?v=20261104-api2"><link rel="stylesheet" href="/static/collections.css?v=20261104-api2"><link rel="stylesheet" href="/static/photo-tools.css?v=20261104-api2">
+  <link rel="stylesheet" href="/static/modern.css?v=20261104-api2"><link rel="stylesheet" href="/static/studio.css?v=20261104-api2"><link rel="stylesheet" href="/static/viewer.css?v=20261104-api2"><link rel="stylesheet" href="/static/comfort.css?v=20261104-api2">
+  <script src="/static/app.js?v=20261104-api2" defer></script><script src="/static/photo-picker.js?v=20261104-api2" defer></script><script src="/static/search.js?v=20261104-api2" defer></script><script src="/static/style-chat.js?v=20261104-api2" defer></script><script src="/static/chat.js?v=20261104-api2" defer></script><script src="/static/bulk.js?v=20261104-api2" defer></script><script src="/static/workspace.js?v=20261104-api2" defer></script><script src="/static/system.js?v=20261104-api2" defer></script><script src="/static/photo-actions.js?v=20261104-api2" defer></script><script src="/static/modern.js?v=20261104-api2" defer></script><script src="/static/studio.js?v=20261104-api2" defer></script><script src="/static/collections.js?v=20261104-api2" defer></script>
 </head>
 <body>
 <aside class="sidebar">
@@ -115,8 +115,9 @@
       <label for="compatible-label">Tên hiển thị</label><input id="compatible-label" maxlength="40" value="VietAPI" spellcheck="false" autocomplete="off">
       <label for="compatible-key">API key</label><input id="compatible-key" type="password" maxlength="4096" autocomplete="off" spellcheck="false" placeholder="Dán key của nhà cung cấp">
       <label for="compatible-model">Model chat</label><div class="compatible-model-row"><input id="compatible-model" list="compatible-models" maxlength="128" placeholder="vd. claude-sonnet-5.5, gpt-6-sol" spellcheck="false" autocomplete="off"><button class="button subtle" type="button" id="compatible-fetch">Lấy danh sách</button></div>
-      <datalist id="compatible-models"></datalist>
-      <label for="compatible-image-model">Model tạo ảnh · tùy chọn</label><input id="compatible-image-model" list="compatible-models" maxlength="128" placeholder="vd. gpt-image-2 · để trống nếu không cần" spellcheck="false" autocomplete="off">
+      <datalist id="compatible-models"></datalist><datalist id="compatible-image-models"></datalist>
+      <label for="compatible-image-model">Model tạo ảnh · tùy chọn</label><input id="compatible-image-model" list="compatible-image-models" maxlength="128" placeholder="vd. gpt-image-2 · để trống nếu không cần" spellcheck="false" autocomplete="off">
+      <label for="compatible-image-mode">Cách vẽ ảnh</label><select id="compatible-image-mode"><option value="auto">Tự chọn theo nhà cung cấp</option><option value="edit">Gửi ảnh để model sửa trực tiếp (OpenAI, gateway có images/edits)</option><option value="redraw">Model xem ảnh rồi vẽ lại toàn bộ cảnh (VietAPI)</option></select>
       <div class="chat-settings-actions"><button class="button primary" id="compatible-save" type="submit">Lưu và dùng</button><button class="button subtle" id="compatible-clear" type="button" disabled>Xóa kết nối</button></div>
       <p id="compatible-status" role="status" aria-live="polite"></p>
     </form>
