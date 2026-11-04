@@ -24,3 +24,12 @@ class Settings:
             raise ValueError('FSM_FACE_MODEL must be adaface or facenet')
         for folder in ['photos', 'originals', 'thumbs', 'queries', 'outputs', 'styles', 'exports', 'logs']:
             (self.data_dir / folder).mkdir(parents=True, exist_ok=True)
+
+
+def torch_device():
+    """CUDA when it is available (unless FSM_DEVICE says otherwise), else CPU. Same rule as Models for every engine."""
+    import torch
+    preference = os.getenv('FSM_DEVICE', 'auto')
+    if preference == 'auto':
+        return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    return torch.device(preference)

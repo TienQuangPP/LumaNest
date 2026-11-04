@@ -54,7 +54,7 @@ class EffectInput(BaseModel):
 
 class SamEngine:
     def __init__(self,directory,capacity=4):
-        self.directory,self.model,self.processor=directory,None,None
+        self.directory,self.model,self.processor,self.device=directory,None,None,'cpu'
         # Image encoder output per (photo id, digest), ~16 MB each; only the light prompt decoder runs per click.
         self.capacity,self.embeddings,self.cache_lock=capacity,OrderedDict(),threading.Lock()
     @property
@@ -72,7 +72,9 @@ class SamEngine:
         from transformers import Sam2Model,Sam2Processor
         torch.set_num_threads(4)
         self.processor=Sam2Processor.from_pretrained(self.directory,local_files_only=True,trust_remote_code=False)
-        self.model=Sam2Model.from_pretrained(self.directory,local_files_only=True,trust_remote_code=False,use_safetensors=True).eval()
+        from .config import torch_device
+        self.device=torch_device()
+        self.model=Sam2Model.from_pretrained(self.directory,local_files_only=True,trust_remote_code=False,use_safetensors=True).eval().to(self.device)
     def forget(self,photo_ids):
         with self.cache_lock:
             for key in [key for key in self.embeddings if key[0] in photo_ids]:del self.embeddings[key]
@@ -82,7 +84,7 @@ class SamEngine:
                 self.embeddings.move_to_end(key);return self.embeddings[key]
         import torch
         inputs=self.processor(images=image,return_tensors='pt')
-        with torch.inference_mode():entry=(self.model.get_image_embeddings(inputs['pixel_values']),inputs['original_sizes'])
+        with torch.inference_mode():entry=(self.model.get_image_embeddings(inputs['pixel_values'].to(self.device)),inputs['original_sizes'])
         if key is not None:
             with self.cache_lock:
                 for stale in [item for item in self.embeddings if item[0]==key[0]]:del self.embeddings[stale]
@@ -95,7 +97,7 @@ class SamEngine:
         coordinates=[[p.x*max(1,image.width-1),p.y*max(1,image.height-1)] for p in points]
         embeddings,sizes=self.embed(image,key)
         inputs=self.processor(input_points=[[coordinates]],input_labels=[[[p.label for p in points]]],original_sizes=sizes,return_tensors='pt')
-        with torch.inference_mode():outputs=self.model(image_embeddings=embeddings,input_points=inputs['input_points'],input_labels=inputs['input_labels'])
+        with torch.inference_mode():outputs=self.model(image_embeddings=embeddings,input_points=inputs['input_points'].to(self.device),input_labels=inputs['input_labels'].to(self.device))
         masks=self.processor.post_process_masks(outputs.pred_masks.cpu(),sizes)[0][0]
         scores=outputs.iou_scores[0,0].float().cpu().numpy()
         order=np.argsort(-scores)

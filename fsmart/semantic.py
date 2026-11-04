@@ -21,6 +21,7 @@ MODEL_KEY = REPO + '@' + REVISION
 class SiglipEngine:
     dimension = 768
     def __init__(self, directory):
+        self.device = 'cpu'
         self.directory, self.model, self.processor = directory, None, None
 
     @property
@@ -47,19 +48,21 @@ class SiglipEngine:
         from transformers import AutoModel, AutoProcessor
         torch.set_num_threads(4)
         self.processor = AutoProcessor.from_pretrained(self.directory, local_files_only=True, trust_remote_code=False)
+        from .config import torch_device
+        self.device = torch_device()
         self.model = AutoModel.from_pretrained(self.directory, local_files_only=True,
-                                              trust_remote_code=False, use_safetensors=True).eval()
+                                              trust_remote_code=False, use_safetensors=True).eval().to(self.device)
 
     def encode(self, image=None, text=None):
         self.load()
         import torch
         with torch.inference_mode():
             if image is not None:
-                inputs = self.processor(images=image, return_tensors='pt')
+                inputs = self.processor(images=image, return_tensors='pt').to(self.device)
                 vector = self.model.get_image_features(**inputs)
             else:
                 inputs = self.processor(text=[text.lower()], padding='max_length', max_length=64,
-                                        truncation=True, return_tensors='pt')
+                                        truncation=True, return_tensors='pt').to(self.device)
                 vector = self.model.get_text_features(**inputs)
             if not torch.is_tensor(vector):
                 vector = vector.pooler_output
