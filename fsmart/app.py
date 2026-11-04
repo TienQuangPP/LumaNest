@@ -339,6 +339,7 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
     def trash_photos(album_id: str,payload: ExportInput):
         album_or_404(album_id)
         result=trash.put(album_id,payload.photo_ids)
+        app.state.subjects.forget(result['photo_ids'])
         result['export_cleanup_errors']=invalidate_exports(payload.photo_ids)
         return result
 
@@ -349,6 +350,7 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
     @app.post('/api/trash/purge')
     def purge_photos(payload: ExportInput):
         result=trash.purge(payload.photo_ids)
+        app.state.subjects.forget(payload.photo_ids)
         result['file_cleanup_errors']+=invalidate_exports(payload.photo_ids)
         for job_id in result.pop('affected_batch_ids'):
             bulk.report(job_id)
@@ -505,6 +507,7 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
         with file_lock:
             photo=photo_or_404(photo_id)
             result=trash.put(photo['album_id'],[photo_id])
+            app.state.subjects.forget([photo_id])
             result['export_cleanup_errors']=invalidate_exports([photo_id])
             return {**result,'deleted':photo_id,'recoverable':True}
 

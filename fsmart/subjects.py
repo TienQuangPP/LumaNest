@@ -4,6 +4,7 @@ import io
 import json
 import threading
 import time
+from collections import OrderedDict
 from typing import Literal
 
 import numpy as np
@@ -52,7 +53,10 @@ class EffectInput(BaseModel):
 
 
 class SamEngine:
-    def __init__(self,directory):self.directory,self.model,self.processor=directory,None,None
+    def __init__(self,directory,capacity=4):
+        self.directory,self.model,self.processor=directory,None,None
+        # Image encoder output per (photo id, digest), ~16 MB each; only the light prompt decoder runs per click.
+        self.capacity,self.embeddings,self.cache_lock=capacity,OrderedDict(),threading.Lock()
     @property
     def installed(self):return (self.directory/'model.safetensors').is_file() and (self.directory/'provenance.json').is_file()
     def load(self):
@@ -69,13 +73,30 @@ class SamEngine:
         torch.set_num_threads(4)
         self.processor=Sam2Processor.from_pretrained(self.directory,local_files_only=True,trust_remote_code=False)
         self.model=Sam2Model.from_pretrained(self.directory,local_files_only=True,trust_remote_code=False,use_safetensors=True).eval()
-    def segment(self,image,points):
+    def forget(self,photo_ids):
+        with self.cache_lock:
+            for key in [key for key in self.embeddings if key[0] in photo_ids]:del self.embeddings[key]
+    def embed(self,image,key=None):
+        with self.cache_lock:
+            if key in self.embeddings:
+                self.embeddings.move_to_end(key);return self.embeddings[key]
+        import torch
+        inputs=self.processor(images=image,return_tensors='pt')
+        with torch.inference_mode():entry=(self.model.get_image_embeddings(inputs['pixel_values']),inputs['original_sizes'])
+        if key is not None:
+            with self.cache_lock:
+                for stale in [item for item in self.embeddings if item[0]==key[0]]:del self.embeddings[stale]
+                self.embeddings[key]=entry
+                while len(self.embeddings)>self.capacity:self.embeddings.popitem(last=False)
+        return entry
+    def segment(self,image,points,key=None):
         self.load()
         import torch
         coordinates=[[p.x*max(1,image.width-1),p.y*max(1,image.height-1)] for p in points]
-        inputs=self.processor(images=image,input_points=[[coordinates]],input_labels=[[[p.label for p in points]]],return_tensors='pt')
-        with torch.inference_mode():outputs=self.model(**inputs)
-        masks=self.processor.post_process_masks(outputs.pred_masks.cpu(),inputs['original_sizes'])[0][0]
+        embeddings,sizes=self.embed(image,key)
+        inputs=self.processor(input_points=[[coordinates]],input_labels=[[[p.label for p in points]]],original_sizes=sizes,return_tensors='pt')
+        with torch.inference_mode():outputs=self.model(image_embeddings=embeddings,input_points=inputs['input_points'],input_labels=inputs['input_labels'])
+        masks=self.processor.post_process_masks(outputs.pred_masks.cpu(),sizes)[0][0]
         scores=outputs.iou_scores[0,0].float().cpu().numpy()
         order=np.argsort(-scores)
         return [Image.fromarray(masks[int(index)].cpu().numpy().astype(np.uint8)*255) for index in order]
@@ -88,6 +109,7 @@ class Subjects:
         self.lock=threading.Lock()
         (settings.data_dir/'masks').mkdir(exist_ok=True)
     def mask_path(self,mask_id):return self.settings.data_dir/'masks'/f'{mask_id}.png'
+    def forget(self,photo_ids):self.engine.forget(set(photo_ids))
     def read(self,mask_id):
         row=self.store.one('''SELECT m.* FROM subject_masks m JOIN active_photos p ON p.id=m.photo_id
           WHERE m.id=? AND m.digest=p.digest AND m.model_key=?''',(mask_id,MODEL_KEY))
@@ -112,11 +134,14 @@ class Subjects:
                 with Image.open(self.settings.data_dir/'photos'/f"{photo['id']}.jpg") as image:
                     image=image.convert('RGB');image.thumbnail((1024,1024))
             if not self.engine.installed:raise HTTPException(503,'Chưa có model phân vùng. Chạy scripts/fetch_segmentation.py.')
-            masks=self.engine.segment(image,payload.points)
+            masks=self.engine.segment(image,payload.points,(photo['id'],photo['digest']))
             if len(masks)!=3 or any(mask.size!=image.size for mask in masks):raise RuntimeError('Model trả vùng chọn không hợp lệ.')
             rows=[]
             with self.file_lock:
-                if metadata(self.store,photo['id'])['digest']!=photo['digest']:raise HTTPException(409,'Ảnh nguồn đã thay đổi. Chọn lại ảnh.')
+                try:current=metadata(self.store,photo['id'])
+                except HTTPException:self.forget([photo['id']]);raise
+                if current['digest']!=photo['digest']:
+                    self.forget([photo['id']]);raise HTTPException(409,'Ảnh nguồn đã thay đổi. Chọn lại ảnh.')
                 ensure_space(self.settings,image.width*image.height*3+16384)
                 written=[]
                 try:
