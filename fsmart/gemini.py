@@ -99,3 +99,26 @@ def generate_image(post,key,model,prompt):
         return decode_image(base64.b64decode(encoded,validate=True),4_194_304)
     except (ValueError,TypeError,KeyError,IndexError,AttributeError,StopIteration,binascii.Error):
         raise ChatUnavailable('Gemini chưa trả về ảnh phong cách hợp lệ. Thử lại sau.',502) from None
+
+
+def edit_image(post,key,model,image,prompt):
+    """Send one photo and an edit instruction to a Gemini image model; returns the repainted PIL image."""
+    import base64,binascii,io
+    from .chat import ChatUnavailable,redact
+    from .images import decode_image
+    if model not in IMAGE_MODELS:raise ChatUnavailable('Model ảnh Gemini chưa được hỗ trợ.',422)
+    buffer=io.BytesIO();image.save(buffer,'JPEG',quality=92)
+    body={'contents':[{'role':'user','parts':[{'inlineData':{'mimeType':'image/jpeg','data':base64.b64encode(buffer.getvalue()).decode()}},
+                                              {'text':redact(prompt).replace(key,'[API key đã ẩn]')}]}],
+          'generationConfig':{'responseModalities':['IMAGE']}}
+    data=_request(post,key,model,body,timeout=(5,180))
+    try:
+        candidate=data['candidates'][0]
+        if candidate.get('finishReason')!='STOP':raise ValueError('Incomplete image')
+        inline=next(part['inlineData'] for part in candidate['content']['parts'] if part.get('inlineData') and not part.get('thought'))
+        if inline['mimeType'] not in {'image/png','image/jpeg','image/webp'}:raise ValueError('Unexpected image type')
+        encoded=inline['data']
+        if not isinstance(encoded,str) or len(encoded)>24*1024*1024:raise ValueError('Oversized image')
+        return decode_image(base64.b64decode(encoded,validate=True),16_777_216)
+    except (ValueError,TypeError,KeyError,IndexError,AttributeError,StopIteration,binascii.Error):
+        raise ChatUnavailable('Gemini chưa trả về ảnh đã vẽ lại (có thể bị chặn vì có người trong ảnh hoặc hết hạn mức). Thử ảnh khác hoặc model ảnh khác.',502) from None

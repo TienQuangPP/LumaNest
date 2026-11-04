@@ -127,3 +127,34 @@ def test_routes_configure_list_and_clear(tmp_path):
         assert c.post('/api/chat/compatible/config', json={'base_url': BASE, 'api_key': KEY, 'model': 'x'}, headers={'Origin': 'https://evil.example'}).status_code == 403
         cleared = c.delete('/api/chat/compatible/config').json()
         assert cleared['selection'] == 'qwen' and not cleared['compatible_configured']
+
+
+def test_van_gogh_with_an_api_source_is_painted_by_that_api_not_locally(tmp_path):
+    from test_style_chat import StyleModels, upload, wait_job, png
+    artwork = {'reply': 'Dùng tranh Van Gogh.', 'title': 'Van Gogh', 'engine': 'artwork', 'preset': 'candy',
+               'strength': .7, 'steps': 50, 'reference_prompt': 'met:436535'}  # what a planner may still answer
+    fake = Fake([chat_reply(json.dumps(artwork)), response({'data': [{'b64_json': base64.b64encode(png('green')).decode()}]})])
+    s = service(fake); configure(s, image_model='gpt-image-2')
+    app = create_app(Settings(data_dir=tmp_path / 'runtime', weights_dir=tmp_path / 'weights'), StyleModels(), s)
+    with TestClient(app) as client:
+        photo = upload(client)
+        plan = client.post('/api/chat', json={'message': 'tạo phong cách vangogh', 'mode': 'style', 'provider': 'compatible'}).json()['style_plan']
+        assert plan['direct'] and plan['engine'] == 'reference' and plan['api_label'] == 'VietAPI' and plan['image_model'] == 'gpt-image-2'
+        assert 'MODEL API' in fake.calls[0][1]['json']['messages'][0]['content']
+        job = wait_job(client, client.post('/api/stylize/from-chat', json={'photo_id': photo, 'plan_id': plan['id']}).json()['job_id'])
+        assert job['status'] == 'done' and job['result']['provider'] == 'VietAPI' and job['result']['model'] == 'gpt-image-2'
+        url, kw = fake.calls[1]
+        assert url == BASE + '/images/edits' and kw['data']['model'] == 'gpt-image-2' and 'van Gogh' in kw['data']['prompt']
+        assert client.app.state.models.calls == []
+
+
+def test_api_plan_without_an_image_model_asks_for_one_instead_of_running_locally(tmp_path):
+    from test_style_chat import StyleModels, upload, REFERENCE
+    fake = Fake([chat_reply(json.dumps(REFERENCE))])
+    s = service(fake); configure(s)  # chat model only
+    app = create_app(Settings(data_dir=tmp_path / 'runtime', weights_dir=tmp_path / 'weights'), StyleModels(), s)
+    with TestClient(app) as client:
+        photo = upload(client)
+        plan = client.post('/api/chat', json={'message': 'màu nước', 'mode': 'style', 'provider': 'compatible'}).json()['style_plan']
+        refused = client.post('/api/stylize/from-chat', json={'photo_id': photo, 'plan_id': plan['id']})
+        assert refused.status_code == 409 and 'model tạo ảnh' in refused.json()['detail'] and not client.app.state.models.calls

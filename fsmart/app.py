@@ -642,6 +642,28 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
         data=io.BytesIO();image.save(data,'JPEG',quality=88);data.seek(0)
         return StreamingResponse(data,media_type='image/jpeg')
 
+    def api_style_job(job_id, photo_id, recipe, plan_id):
+        """The API model the user chose repaints the photo; no local style model is involved."""
+        try:
+            started = time.perf_counter()
+            provider = chat.plans.provider(plan_id)
+            label, image_model = chat.image_label(provider)
+            store.update_job(job_id, 'running', .1, f'Đang gửi ảnh tới {label} · {image_model}; model API đang vẽ lại ảnh…')
+            with Image.open(settings.data_dir / 'photos' / f'{photo_id}.jpg') as source:
+                image = source.convert('RGB')
+            output = chat.edit_photo(image, recipe, provider)
+            store.update_job(job_id, 'running', .9, f'{label} đã trả ảnh, đang lưu')
+            details = {'profile': 'api', 'engine': 'api', 'provider': label, 'model': image_model, 'strength': recipe.strength}
+            output_id = save_output(store, settings, output, photo_id, 'custom', recipe.title, details)
+            store.update_job(job_id, 'done', 1, f'Ảnh do {label} vẽ đã sẵn sàng', {'output_id': output_id, 'cached': False, 'seconds': round(time.perf_counter()-started, 3), 'profile': 'api', 'provider': label, 'model': image_model, 'style_label': recipe.title, 'image_url': f'/api/outputs/{output_id}/image', 'download_url': f'/api/outputs/{output_id}/image?download=true'})
+        except Exception as exc:
+            if isinstance(exc, ChatUnavailable):
+                log.warning('API photo edit failed: %s', exc)
+            else:
+                log.exception('API photo edit failed')
+            chat.plans.failed(plan_id, photo_id, job_id)
+            store.update_job(job_id, 'error', 1, str(exc)[:300])
+
     def style_job(job_id, photo_id, style_id, strength, steps, reference_path, recipe=None, plan_id=None, profile='fast'):
         try:
             started = time.perf_counter()
@@ -690,6 +712,17 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
     def stylize_from_chat(payload: ChatStyleInput):
         photo_or_404(payload.photo_id)
         recipe = chat.get_style_plan(payload.plan_id)
+        try:
+            direct = chat.plans.is_direct(payload.plan_id)
+        except KeyError:
+            raise ChatUnavailable('Đề xuất phong cách đã hết hạn. Hãy gửi lại mô tả.', 409) from None
+        if direct:
+            chat.require_image_key(chat.plans.provider(payload.plan_id))
+            job_id, created = chat.begin_style_plan(payload.plan_id, payload.photo_id,
+                lambda kind: admission.admit(payload.photo_id,{'plan':payload.plan_id,'profile':'api'})[0],'api')
+            if created:
+                executor.submit(api_style_job, job_id, payload.photo_id, recipe, payload.plan_id)
+            return {'job_id': job_id}
         if recipe.engine in {'reference','artwork'}:
             if recipe.engine=='reference':chat.require_image_key(chat.plans.provider(payload.plan_id))
             else:

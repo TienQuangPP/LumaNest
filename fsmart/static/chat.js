@@ -33,10 +33,10 @@
     $('chat-source').value=selection;
     $('chat-provider').textContent = custom ? (status.configured ? `${status.compatible_label} · ${status.model}` : 'API tùy chỉnh · cần kết nối') : gpt ? `GPT · ${status.model}` : gemini ? `${status.model}${status.configured?'':' · cần key'}` : localModel ? status.model : 'Hướng dẫn có sẵn';
     $('chat-privacy').textContent = custom
-      ? `Văn bản chat gửi tới ${status.compatible_label||'API tùy chỉnh'} · ảnh nguồn không được gửi.`
+      ? `Văn bản chat gửi tới ${status.compatible_label||'API tùy chỉnh'}. Ảnh chỉ được gửi khi bạn bấm Gửi ảnh để vẽ.`
       : gpt
-      ? 'Văn bản chat được gửi tới OpenAI. Ảnh không được gửi.'
-      : gemini ? 'Gemini nhận văn bản chat qua Google · ảnh nguồn không được gửi.' : localModel ? 'Qwen chạy trên máy · không gửi hội thoại hay ảnh ra ngoài.' : 'Hướng dẫn có sẵn · không gửi dữ liệu ra ngoài.';
+      ? 'Văn bản chat được gửi tới OpenAI. Ảnh chỉ được gửi khi bạn bấm Gửi ảnh cho OpenAI vẽ.'
+      : gemini ? 'Gemini nhận văn bản chat. Ảnh chỉ được gửi khi bạn bấm Gửi ảnh cho Gemini vẽ.' : localModel ? 'Qwen chạy trên máy · không gửi hội thoại hay ảnh ra ngoài.' : 'Hướng dẫn có sẵn · không gửi dữ liệu ra ngoài.';
     $('chat-config-status').textContent = gpt
       ? `Đã cấu hình ${status.model}${status.key_source === 'environment' ? ' từ biến môi trường' : ' cho phiên chạy này'}. Key sẽ được kiểm tra khi gửi câu hỏi.`
       : localModel ? 'Chatbot Qwen sẵn sàng. Lượt đầu cần nạp model; có thể mất vài chục giây.' : 'Chưa bật GPT. Bạn vẫn dùng được phần hướng dẫn có sẵn.';
@@ -123,9 +123,10 @@
     card.append(el('small', 'chat-plan-eyebrow', 'ĐỀ XUẤT PHONG CÁCH'), el('strong', '', plan.title));
     const preset = state.styles.find(style => style.id === plan.preset)?.name || plan.preset;
     const providerName=plan.api_provider==='gemini'?'Gemini':plan.api_provider==='compatible'?(chat.status?.compatible_label||'API tùy chỉnh'):'OpenAI';
-    const route = plan.engine === 'reference' ? `${providerName} tạo ảnh tham chiếu → VGG19 · ${plan.steps} bước` : plan.engine==='artwork' ? `Tranh có sẵn → VGG19 · ${plan.steps} bước · trên máy` : `${preset} · chạy NST trên máy`;
+    const route = plan.direct ? `${plan.api_label||providerName} vẽ lại ảnh bằng ${plan.image_model||'model ảnh'} · không dùng model trên máy` : plan.engine === 'reference' ? `${providerName} tạo ảnh tham chiếu → VGG19 · ${plan.steps} bước` : plan.engine==='artwork' ? `Tranh có sẵn → VGG19 · ${plan.steps} bước · trên máy` : `${preset} · chạy NST trên máy`;
     card.append(el('p', '', `${route}\nĐộ đậm ${Math.round(plan.strength*100)}%`));
-    if (plan.engine === 'reference') card.append(el('p', 'chat-plan-cost', 'Dùng hạn mức API ảnh khi bấm tạo. Chỉ gửi mô tả; ảnh gốc ở trên máy.'));
+    if (plan.direct) card.append(el('p', 'chat-plan-cost', `Khi bấm tạo, ảnh bạn chọn (thu nhỏ tối đa 1536 px) được gửi tới ${plan.api_label||providerName} để vẽ lại. Có thể tốn phí API ảnh.`));
+    else if (plan.engine === 'reference') card.append(el('p', 'chat-plan-cost', 'Dùng hạn mức API ảnh khi bấm tạo. Chỉ gửi mô tả; ảnh gốc ở trên máy.'));
     if(plan.engine==='artwork'){const image=el('img','chat-reference');image.src=plan.reference_image_url;image.alt='Tranh tham chiếu Van Gogh';card.append(image);const source=el('a','text-button','Tranh public domain · The Met ↗');source.href=plan.source_url;source.target='_blank';source.rel='noopener noreferrer';card.append(source);}
     const label = el('label', '', 'Ảnh để tạo tác phẩm');
     const select = el('select', 'chat-plan-photo');
@@ -142,7 +143,7 @@
     }
     select.value = state.selected?.id || '';
     const imageKeyReady=()=>plan.api_provider==='gemini'?!!chat.status?.gemini_configured:plan.api_provider==='compatible'?!!(chat.status?.compatible_configured&&chat.status?.compatible_image_model):!!chat.status?.image_configured;
-    const button = el('button', 'button primary chat-plan-create', plan.requires_api_key && !imageKeyReady() ? (plan.api_provider==='compatible'?'Chọn model tạo ảnh để tạo mới':`Kết nối ${plan.api_provider==='gemini'?'Gemini':'API ảnh'} để tạo mới`) : 'Tạo ảnh theo mô tả');
+    const button = el('button', 'button primary chat-plan-create', plan.requires_api_key && !imageKeyReady() ? (plan.api_provider==='compatible'?'Chọn model tạo ảnh để tạo mới':`Kết nối ${plan.api_provider==='gemini'?'Gemini':'API ảnh'} để tạo mới`) : plan.direct ? `Gửi ảnh cho ${plan.api_label||providerName} vẽ` : 'Tạo ảnh theo mô tả');
     button.type = 'button';
     const status = el('p', 'chat-plan-status');
     status.setAttribute('role', 'status');
@@ -152,10 +153,10 @@
       const photo = findPhotoById(select.value);
       if (!photo) { status.textContent = 'Chọn một ảnh trong danh sách trước. Nếu chưa có ảnh, thêm ảnh vào Thư viện.'; return; }
       setPending(true);
-      status.textContent = plan.engine === 'reference' ? 'Đang tạo ảnh phong cách rồi chuyển style. Có thể mất vài phút.' : 'Đang tạo tác phẩm bằng model NST…';
+      status.textContent = plan.direct ? `Đang gửi ảnh tới ${plan.api_label||providerName} · ${plan.image_model}. Model API đang vẽ lại, thường 10–60 giây…` : plan.engine === 'reference' ? 'Đang tạo ảnh phong cách rồi chuyển style. Có thể mất vài phút.' : 'Đang tạo tác phẩm bằng model NST…';
       try {
         const result = await createFromStyleRecipe(plan, photo);
-        status.textContent = 'Đã tạo xong. Xem trước/sau trong Phòng sáng tạo.';
+        status.textContent = plan.direct ? `${plan.api_label||providerName} đã vẽ xong${result.seconds?` sau ${Math.round(result.seconds)} giây`:''}. Xem trước/sau trong Phòng sáng tạo.` : 'Đã tạo xong. Xem trước/sau trong Phòng sáng tạo.';
         const preview = el('img', 'chat-plan-output');
         preview.alt = plan.title;
         preview.src = result.image_url;

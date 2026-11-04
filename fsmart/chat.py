@@ -14,9 +14,9 @@ import requests
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
 from .images import decode_image
-from .style_plans import IMAGE_MODELS, STYLE_INSTRUCTIONS, STYLE_SUGGESTIONS, StylePlanCache, StyleRecipe, is_style_request, local_recipe
+from .style_plans import API_DIRECT_INSTRUCTIONS, IMAGE_MODELS, STYLE_INSTRUCTIONS, api_edit_prompt, api_style_prompt, STYLE_SUGGESTIONS, StylePlanCache, StyleRecipe, is_style_request, local_recipe
 from . import compatible
-from .gemini import DEFAULT_MODEL as GEMINI_MODEL,generate as gemini_generate,generate_image as gemini_generate_image,normalize_key
+from .gemini import DEFAULT_MODEL as GEMINI_MODEL,edit_image as gemini_edit_image,generate as gemini_generate,generate_image as gemini_generate_image,normalize_key
 
 
 DEFAULT_MODEL = 'gpt-5.4-mini'
@@ -501,7 +501,7 @@ Không khẳng định đã tạo ảnh. Đây chỉ là đề xuất. Chỉ dù
         elif provider=='gemini':
             if not self._busy.acquire(blocking=False):raise ChatUnavailable('Đang xử lý hội thoại khác. Thử lại sau.',429)
             try:
-                raw=gemini_generate(self._post,key,model,STYLE_INSTRUCTIONS,payload.message,payload.history,StyleRecipe.model_json_schema())
+                raw=gemini_generate(self._post,key,model,STYLE_INSTRUCTIONS+API_DIRECT_INSTRUCTIONS,payload.message,payload.history,StyleRecipe.model_json_schema())
                 try:recipe=StyleRecipe.model_validate_json(raw)
                 except ValueError:raise ChatUnavailable('Gemini chưa lập được công thức hợp lệ. Thử mô tả lại màu và chất liệu.',502) from None
             finally:self._busy.release()
@@ -511,7 +511,7 @@ Không khẳng định đã tạo ảnh. Đây chỉ là đề xuất. Chỉ dù
             try:
                 with self._lock:base,label=self._compat['base'],self._compat['label']
                 schema=json.dumps(StyleRecipe.model_json_schema(),ensure_ascii=False)
-                instructions=(STYLE_INSTRUCTIONS+f'\nStyle đang chọn: {payload.style}; độ đậm hiện tại {payload.strength}.'
+                instructions=(STYLE_INSTRUCTIONS+API_DIRECT_INSTRUCTIONS+f'\nStyle đang chọn: {payload.style}; độ đậm hiện tại {payload.strength}.'
                               +'\nChỉ trả về MỘT đối tượng JSON đúng schema sau, không markdown, không giải thích thêm:\n'+schema)
                 raw=compatible.chat(self._post,base,key,model,instructions,payload.message,payload.history,label=label,max_tokens=1800,temperature=.4)
                 try:recipe=StyleRecipe.model_validate(compatible.json_object(raw))
@@ -523,7 +523,7 @@ Không khẳng định đã tạo ảnh. Đây chỉ là đề xuất. Chỉ dù
                 raise ChatUnavailable('Đang có hội thoại được xử lý. Thử lại sau một chút.', 429)
             try:
                 body = {'model': model, 'store': False, 'max_output_tokens': 1800,
-                        'instructions': STYLE_INSTRUCTIONS + f'\nStyle đang chọn: {payload.style}; độ đậm hiện tại {payload.strength}.',
+                        'instructions': STYLE_INSTRUCTIONS + API_DIRECT_INSTRUCTIONS + f'\nStyle đang chọn: {payload.style}; độ đậm hiện tại {payload.strength}.',
                         'input': [{'role': turn.role, 'content': redact(turn.content)} for turn in payload.history]
                                  + [{'role': 'user', 'content': redact(payload.message)}],
                         'text': {'format': {'type': 'json_schema', 'name': 'style_recipe', 'strict': True,
@@ -539,12 +539,19 @@ Không khẳng định đã tạo ảnh. Đây chỉ là đề xuất. Chỉ dù
                 self._busy.release()
         recipe = recipe.model_copy(update={name: redact(getattr(recipe, name)) for name in ['reply', 'title', 'reference_prompt']})
         plan = None
+        direct = provider in ('gemini','compatible','openai')
+        if direct and recipe.engine in ('preset','artwork'):
+            # The user picked an API model: that model repaints the photo, never a local preset or VGG19.
+            recipe = recipe.model_copy(update={'engine':'reference','reference_prompt':api_style_prompt(recipe)[:1200],'steps':50})
         if recipe.engine != 'unsupported':
-            image_provider=provider if provider in ('gemini','compatible') else 'openai'
-            plan_id = self.plans.add(recipe,image_provider)
+            image_provider=provider if direct else 'openai'
+            plan_id = self.plans.add(recipe,image_provider,direct)
             plan = {'id': plan_id, 'title': recipe.title, 'engine': recipe.engine, 'preset': recipe.preset,
                     'strength': recipe.strength, 'steps': recipe.steps, 'requires_api_key': recipe.engine == 'reference'}
             if recipe.engine=='reference':plan['api_provider']=image_provider
+            if direct:
+                label,image_model=self.image_label(provider)
+                plan.update(direct=True,requires_api_key=True,api_label=label,image_model=image_model)
             if recipe.engine=='artwork':
                 from .artworks import ARTWORK
                 plan.update(reference_image_url='/api/style-artworks/van-gogh/image',source_url=ARTWORK['source_url'])
@@ -574,6 +581,30 @@ Không khẳng định đã tạo ảnh. Đây chỉ là đề xuất. Chỉ dù
                 return
             if not self._key:
                 raise ChatUnavailable('Bật GPT bằng OpenAI API key để tạo ảnh phong cách mới. Preset có sẵn vẫn dùng được trên máy.')
+
+    def image_label(self,provider):
+        """(provider name, image model) shown to the user before a photo is sent."""
+        with self._lock:
+            if provider=='gemini':return 'Gemini',self._gemini_image_model
+            if provider=='compatible':return self._compat['label'],self._compat['image_model']
+            return 'OpenAI',self._image_model
+
+    def edit_photo(self, image, recipe, provider):
+        """The chosen API image model repaints the photo itself; nothing runs locally except resizing."""
+        self.require_image_key(provider)
+        with self._lock:
+            if provider=='gemini':key,model,base,label=self._gemini_key,self._gemini_image_model,'','Gemini'
+            elif provider=='compatible':key,model,base,label=self._compat['key'],self._compat['image_model'],self._compat['base'],self._compat['label']
+            else:key,model,base,label=self._key,self._image_model,'https://api.openai.com/v1','OpenAI'
+        if not self._busy.acquire(blocking=False):
+            raise ChatUnavailable('API ảnh đang xử lý yêu cầu khác. Hãy thử lại sau một chút.', 429)
+        try:
+            source=image.copy();source.thumbnail((1536,1536))
+            prompt=api_edit_prompt(recipe)
+            if provider=='gemini':return gemini_edit_image(self._post,key,model,source,prompt)
+            return compatible.edit_image(self._post,self._get,base,key,model,source,prompt,label)
+        finally:
+            self._busy.release()
 
     def generate_style_reference(self, recipe,provider='openai'):
         with self._lock:

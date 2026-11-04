@@ -40,10 +40,12 @@ def _unavailable(message, status=502):
 
 
 def _send(method, url, key, *, label, timeout, **kwargs):
+    headers = {'Authorization': f'Bearer {key}'}
+    if 'files' not in kwargs:  # multipart requests set their own boundary header
+        headers['Content-Type'] = 'application/json'
     for attempt in range(len(RETRY_DELAYS) + 1):
         try:
-            response = method(url, headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
-                              timeout=timeout, allow_redirects=False, **kwargs)
+            response = method(url, headers=headers, timeout=timeout, allow_redirects=False, **kwargs)
         except requests.RequestException:
             raise _unavailable(f'Không kết nối được {label}. Kiểm tra Internet và Base URL rồi thử lại.', 503) from None
         if response.status_code not in TRANSIENT or attempt == len(RETRY_DELAYS):
@@ -124,21 +126,41 @@ def generate_image(post, get, base_url, key, model, prompt, label='API'):
     body = {'model': model, 'prompt': prompt, 'n': 1, 'size': '1024x1024'}
     data = _send(post, base_url + '/images/generations', key, label=label, timeout=(5, 180), json=body)
     try:
-        item = data['data'][0]
-        if isinstance(item.get('b64_json'), str):
-            if len(item['b64_json']) > 16 * 1024 * 1024:
-                raise ValueError('Oversized image')
-            raw = base64.b64decode(item['b64_json'], validate=True)
-        else:
-            url = item['url']
-            if not isinstance(url, str) or urlsplit(url).scheme != 'https':
-                raise ValueError('Unexpected image URL')
-            response = get(url, timeout=(5, 60), allow_redirects=False, stream=True)
-            if response.status_code != 200:
-                raise ValueError('Image download failed')
-            raw = response.raw.read(12 * 1024 * 1024 + 1, decode_content=True)
-            if len(raw) > 12 * 1024 * 1024:
-                raise ValueError('Oversized image')
-        return decode_image(raw, 4_194_304)
+        return decode_image(_image_bytes(get, data), 4_194_304)
     except (ValueError, TypeError, KeyError, IndexError, AttributeError, binascii.Error, requests.RequestException):
         raise _unavailable(f'{label} chưa trả về ảnh phong cách hợp lệ. Kiểm tra model ảnh rồi thử lại.') from None
+
+
+def _image_bytes(get, data, limit=24 * 1024 * 1024):
+    """The first image of an OpenAI-style images response, as b64_json or an https URL."""
+    item = data['data'][0]
+    if isinstance(item.get('b64_json'), str):
+        if len(item['b64_json']) > limit * 4 // 3:
+            raise ValueError('Oversized image')
+        return base64.b64decode(item['b64_json'], validate=True)
+    url = item['url']
+    if not isinstance(url, str) or urlsplit(url).scheme != 'https':
+        raise ValueError('Unexpected image URL')
+    response = get(url, timeout=(5, 60), allow_redirects=False, stream=True)
+    if response.status_code != 200:
+        raise ValueError('Image download failed')
+    raw = response.raw.read(limit + 1, decode_content=True)
+    if len(raw) > limit:
+        raise ValueError('Oversized image')
+    return raw
+
+
+def edit_image(post, get, base_url, key, model, image, prompt, label='API'):
+    """POST /images/edits (gpt-image style) with one photo; returns the repainted PIL image."""
+    import io
+    from .images import decode_image
+    buffer = io.BytesIO(); image.save(buffer, 'PNG')
+    ratio = image.width / max(1, image.height)
+    size = '1536x1024' if ratio > 1.15 else '1024x1536' if ratio < .87 else '1024x1024'
+    data = _send(post, base_url + '/images/edits', key, label=label, timeout=(5, 240),
+                 files={'image': ('photo.png', buffer.getvalue(), 'image/png')},
+                 data={'model': model, 'prompt': prompt, 'n': '1', 'size': size})
+    try:
+        return decode_image(_image_bytes(get, data), 16_777_216)
+    except (ValueError, TypeError, KeyError, IndexError, AttributeError, binascii.Error, requests.RequestException):
+        raise _unavailable(f'{label} chưa trả về ảnh đã vẽ lại. Kiểm tra model ảnh có hỗ trợ sửa ảnh (images/edits) không.') from None

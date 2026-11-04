@@ -101,12 +101,18 @@ def test_google_schema_is_validated_and_image_job_stays_with_google(tmp_path):
         photo=upload(client)
         plan=client.post('/api/chat',json={'message':'Màu nước pastel','mode':'style','provider':'gemini'}).json()
         assert plan['provider']=='gemini' and plan['style_plan']['api_provider']=='gemini'
+        assert plan['style_plan']['direct'] and plan['style_plan']['image_model']=='gemini-3.1-flash-lite-image'
         assert calls[0][1]['json']['generationConfig']['responseJsonSchema']['additionalProperties'] is False
-        s.select_provider(ChatProviderInput(provider='qwen'))
+        assert 'MODEL API' in calls[0][1]['json']['systemInstruction']['parts'][0]['text']
+        s.select_provider(ChatProviderInput(provider='qwen'))  # the plan keeps the provider it was made with
         job=client.post('/api/stylize/from-chat',json={'photo_id':photo,'plan_id':plan['style_plan']['id']})
-        assert job.status_code==202 and wait_job(client,job.json()['job_id'])['status']=='done'
+        done=wait_job(client,job.json()['job_id'])
+        assert job.status_code==202 and done['status']=='done' and done['result']['profile']=='api' and done['result']['provider']=='Gemini'
+        # Google's image model receives the photo itself and repaints it; no local VGG19 or style reference file.
         assert len(calls)==2 and 'gemini-3.1-flash-lite-image:generateContent' in calls[1][0]
-        assert photo not in json.dumps(calls) and 'inlineData' not in json.dumps(calls[1][1]['json'])
+        parts=calls[1][1]['json']['contents'][0]['parts']
+        assert parts[0]['inlineData']['mimeType']=='image/jpeg' and 'Repaint this exact photo' in parts[1]['text']
+        assert photo not in json.dumps(calls) and KEY not in json.dumps([c[1]['json'] for c in calls])
         assert not list((tmp_path/'runtime/styles').iterdir())
 
 def test_invalid_google_recipe_rejected_and_no_key_written_to_disk(tmp_path):

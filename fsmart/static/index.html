@@ -98,7 +98,7 @@
   <div class="chat-source-row"><label for="chat-source">Nguồn trợ lý</label><select id="chat-source"><option value="qwen">Qwen · trên máy</option><option value="gemini">Gemini · API</option><option value="compatible">ChatGPT · Claude · VietAPI…</option></select></div>
   <div id="chat-settings" class="chat-settings hidden">
     <div class="chat-settings-heading"><b>Gemini API</b><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Lấy key của bạn ↗</a></div>
-    <p>Key chỉ giữ trong RAM. Khi dùng Gemini, văn bản chat gửi tới Google; ảnh nguồn vẫn ở trên máy.</p>
+    <p>Key chỉ giữ trong RAM. Khi dùng Gemini, văn bản chat gửi tới Google. Ảnh chỉ được gửi khi bạn bấm “Gửi ảnh cho Gemini vẽ”; Nano Banana sẽ vẽ lại ảnh.</p>
     <form id="gemini-key-form" autocomplete="off" novalidate>
       <label for="gemini-key">Gemini API key</label><input id="gemini-key" type="password" maxlength="8192" autocomplete="off" spellcheck="false" aria-describedby="gemini-config-status" placeholder="Hỗ trợ key AIza… và AQ.…">
       <label for="gemini-model">Model Gemini</label><select id="gemini-model"><option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite · nhanh</option><option value="gemini-3.8-flash">Gemini 3.8 Flash</option></select>
@@ -108,7 +108,7 @@
     </form>
     <details id="compatible-settings"><summary>ChatGPT · Claude · VietAPI · mọi model khác</summary>
     <div class="chat-settings-heading"><b>API tương thích OpenAI</b></div>
-    <p>Dùng cho VietAPI, OpenAI (ChatGPT), Claude, OpenRouter, DeepSeek hoặc Ollama trên máy. Key chỉ giữ trong RAM. Văn bản chat gửi tới nhà cung cấp bạn nhập; ảnh nguồn vẫn ở trên máy.</p>
+    <p>Dùng cho VietAPI, OpenAI (ChatGPT), Claude, OpenRouter, DeepSeek hoặc Ollama trên máy. Key chỉ giữ trong RAM. Văn bản chat gửi tới nhà cung cấp bạn nhập. Để chính model đó vẽ lại ảnh, chọn thêm Model tạo ảnh; ảnh chỉ được gửi khi bạn bấm tạo.</p>
     <form id="compatible-form" autocomplete="off" novalidate>
       <label for="compatible-preset">Nhà cung cấp</label><select id="compatible-preset"><option value="" data-label="VietAPI">VietAPI / API khác · tự nhập Base URL</option><option value="https://api.openai.com/v1" data-label="ChatGPT">OpenAI · ChatGPT</option><option value="https://api.anthropic.com/v1" data-label="Claude">Anthropic · Claude</option><option value="https://openrouter.ai/api/v1" data-label="OpenRouter">OpenRouter · nhiều model</option><option value="https://api.deepseek.com/v1" data-label="DeepSeek">DeepSeek</option><option value="http://localhost:11434/v1" data-label="Ollama">Ollama · trên máy</option></select>
       <label for="compatible-base">Base URL</label><input id="compatible-base" type="url" maxlength="300" placeholder="https://…/v1 (xem trang tài liệu của nhà cung cấp)" spellcheck="false" autocomplete="off">
