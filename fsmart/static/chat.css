@@ -786,3 +786,19 @@
 #gemini-key-form[aria-busy=true] {
   cursor: progress;
 }
+
+.compatible-model-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.compatible-model-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.compatible-model-row .button {
+  flex: none;
+  padding-inline: 12px;
+}

@@ -27,7 +27,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .config import Settings
-from .chat import ChatConfigInput, ChatInput, ChatService, ChatUnavailable, GeminiConfigInput, ChatProviderInput
+from .chat import ChatConfigInput, ChatInput, ChatService, ChatUnavailable, GeminiConfigInput, ChatProviderInput, CompatibleConfigInput, CompatibleModelsInput
 from .images import decode_image, save_photo, save_source, image_digest
 from .models import Models, ModelUnavailable
 from .store import Store, now, uid, IndexCorruptError
@@ -182,6 +182,8 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
 
     @app.exception_handler(RequestValidationError)
     async def safe_validation_handler(request, exc):
+        if request.url.path.startswith('/api/chat/compatible'):
+            return JSONResponse({'detail': 'Thông tin chưa hợp lệ. Base URL phải là https://…/v1 (không kèm mật khẩu hay tham số); tên model không có khoảng trắng.'}, status_code=422)
         if request.url.path.startswith('/api/chat'):
             # FastAPI's default validation body echoes input, including malformed keys.
             return JSONResponse({'detail': 'Thông tin chưa hợp lệ. Câu hỏi tối đa 1.800 ký tự; kiểm tra key và tên model nếu đang cấu hình trợ lý.'}, status_code=422)
@@ -214,6 +216,18 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
     @app.post('/api/chat/gemini/check')
     def gemini_check():
         return JSONResponse(chat.check_gemini(),headers={'Cache-Control':'no-store'})
+
+    @app.post('/api/chat/compatible/models')
+    def compatible_models(payload:CompatibleModelsInput):
+        return JSONResponse(chat.compatible_models(payload),headers={'Cache-Control':'no-store'})
+
+    @app.post('/api/chat/compatible/config')
+    def compatible_config(payload:CompatibleConfigInput):
+        return JSONResponse(chat.configure_compatible(payload),headers={'Cache-Control':'no-store'})
+
+    @app.delete('/api/chat/compatible/config')
+    def compatible_clear():
+        return JSONResponse(chat.clear_compatible(),headers={'Cache-Control':'no-store'})
 
     @app.post('/api/chat')
     def chat_reply(payload: ChatInput):

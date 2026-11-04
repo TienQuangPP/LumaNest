@@ -4,12 +4,12 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#060713"><meta name="description" content="LumaNest: thư viện ảnh AI riêng tư, tìm khuôn mặt và sáng tạo nghệ thuật trên máy."><title>LumaNest — AI Photo Studio</title>
   <link rel="icon" type="image/svg+xml" href="/static/lumanest.svg">
-  <script src="/static/theme.js?v=20261103-aurora"></script>
-  <link rel="stylesheet" href="/static/fonts.css?v=20261103-aurora">
-  <link rel="stylesheet" href="/static/theme.css?v=20261103-aurora">
-  <link rel="stylesheet" href="/static/style.css?v=20261103-aurora"><link rel="stylesheet" href="/static/bulk.css?v=20261103-aurora"><link rel="stylesheet" href="/static/search.css?v=20261103-aurora"><link rel="stylesheet" href="/static/chat.css?v=20261103-aurora"><link rel="stylesheet" href="/static/audit.css?v=20261103-aurora"><link rel="stylesheet" href="/static/collections.css?v=20261103-aurora"><link rel="stylesheet" href="/static/photo-tools.css?v=20261103-aurora">
-  <link rel="stylesheet" href="/static/modern.css?v=20261103-aurora"><link rel="stylesheet" href="/static/studio.css?v=20261103-aurora"><link rel="stylesheet" href="/static/viewer.css?v=20261103-aurora"><link rel="stylesheet" href="/static/comfort.css?v=20261103-aurora">
-  <script src="/static/app.js?v=20261103-aurora" defer></script><script src="/static/photo-picker.js?v=20261103-aurora" defer></script><script src="/static/search.js?v=20261103-aurora" defer></script><script src="/static/style-chat.js?v=20261103-aurora" defer></script><script src="/static/chat.js?v=20261103-aurora" defer></script><script src="/static/bulk.js?v=20261103-aurora" defer></script><script src="/static/workspace.js?v=20261103-aurora" defer></script><script src="/static/system.js?v=20261103-aurora" defer></script><script src="/static/photo-actions.js?v=20261103-aurora" defer></script><script src="/static/modern.js?v=20261103-aurora" defer></script><script src="/static/studio.js?v=20261103-aurora" defer></script><script src="/static/collections.js?v=20261103-aurora" defer></script>
+  <script src="/static/theme.js?v=20261104-api"></script>
+  <link rel="stylesheet" href="/static/fonts.css?v=20261104-api">
+  <link rel="stylesheet" href="/static/theme.css?v=20261104-api">
+  <link rel="stylesheet" href="/static/style.css?v=20261104-api"><link rel="stylesheet" href="/static/bulk.css?v=20261104-api"><link rel="stylesheet" href="/static/search.css?v=20261104-api"><link rel="stylesheet" href="/static/chat.css?v=20261104-api"><link rel="stylesheet" href="/static/audit.css?v=20261104-api"><link rel="stylesheet" href="/static/collections.css?v=20261104-api"><link rel="stylesheet" href="/static/photo-tools.css?v=20261104-api">
+  <link rel="stylesheet" href="/static/modern.css?v=20261104-api"><link rel="stylesheet" href="/static/studio.css?v=20261104-api"><link rel="stylesheet" href="/static/viewer.css?v=20261104-api"><link rel="stylesheet" href="/static/comfort.css?v=20261104-api">
+  <script src="/static/app.js?v=20261104-api" defer></script><script src="/static/photo-picker.js?v=20261104-api" defer></script><script src="/static/search.js?v=20261104-api" defer></script><script src="/static/style-chat.js?v=20261104-api" defer></script><script src="/static/chat.js?v=20261104-api" defer></script><script src="/static/bulk.js?v=20261104-api" defer></script><script src="/static/workspace.js?v=20261104-api" defer></script><script src="/static/system.js?v=20261104-api" defer></script><script src="/static/photo-actions.js?v=20261104-api" defer></script><script src="/static/modern.js?v=20261104-api" defer></script><script src="/static/studio.js?v=20261104-api" defer></script><script src="/static/collections.js?v=20261104-api" defer></script>
 </head>
 <body>
 <aside class="sidebar">
@@ -95,7 +95,7 @@
 <button id="chat-launcher" class="chat-launcher" aria-label="Mở trợ lý LumaNest" aria-expanded="false" aria-controls="chat-panel"><span aria-hidden="true">✳</span><span>Hỏi trợ lý</span></button>
 <section id="chat-panel" class="chat-panel hidden" role="dialog" aria-modal="false" aria-labelledby="chat-title">
   <div class="chat-header"><span class="chat-mark" aria-hidden="true">✳</span><div><h2 id="chat-title">Trợ lý LumaNest</h2><p id="chat-provider">Đang kết nối trợ lý…</p></div><button id="chat-settings-toggle" class="chat-icon" aria-label="Cài đặt trợ lý" aria-expanded="false" aria-controls="chat-settings">⚙</button><button id="chat-close" class="chat-icon" aria-label="Đóng trợ lý">×</button></div>
-  <div class="chat-source-row"><label for="chat-source">Nguồn trợ lý</label><select id="chat-source"><option value="qwen">Qwen · trên máy</option><option value="gemini">Gemini · API</option></select></div>
+  <div class="chat-source-row"><label for="chat-source">Nguồn trợ lý</label><select id="chat-source"><option value="qwen">Qwen · trên máy</option><option value="gemini">Gemini · API</option><option value="compatible">ChatGPT · Claude · VietAPI…</option></select></div>
   <div id="chat-settings" class="chat-settings hidden">
     <div class="chat-settings-heading"><b>Gemini API</b><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Lấy key của bạn ↗</a></div>
     <p>Key chỉ giữ trong RAM. Khi dùng Gemini, văn bản chat gửi tới Google; ảnh nguồn vẫn ở trên máy.</p>
@@ -106,6 +106,21 @@
       <p>API tạo ảnh có thể tính phí, tách biệt với chat miễn phí. Muốn xử lý trên máy, chọn preset hoặc tải ảnh phong cách.</p>
       <div class="chat-settings-actions"><button class="button primary" id="gemini-save-key" type="submit" form="gemini-key-form">Lưu và kiểm tra</button><button class="button subtle" id="gemini-clear-key" type="button" disabled>Xóa key Gemini</button></div><p id="gemini-config-status" role="status" aria-live="polite"></p>
     </form>
+    <details id="compatible-settings"><summary>ChatGPT · Claude · VietAPI · mọi model khác</summary>
+    <div class="chat-settings-heading"><b>API tương thích OpenAI</b></div>
+    <p>Dùng cho VietAPI, OpenAI (ChatGPT), Claude, OpenRouter, DeepSeek hoặc Ollama trên máy. Key chỉ giữ trong RAM. Văn bản chat gửi tới nhà cung cấp bạn nhập; ảnh nguồn vẫn ở trên máy.</p>
+    <form id="compatible-form" autocomplete="off" novalidate>
+      <label for="compatible-preset">Nhà cung cấp</label><select id="compatible-preset"><option value="" data-label="VietAPI">VietAPI / API khác · tự nhập Base URL</option><option value="https://api.openai.com/v1" data-label="ChatGPT">OpenAI · ChatGPT</option><option value="https://api.anthropic.com/v1" data-label="Claude">Anthropic · Claude</option><option value="https://openrouter.ai/api/v1" data-label="OpenRouter">OpenRouter · nhiều model</option><option value="https://api.deepseek.com/v1" data-label="DeepSeek">DeepSeek</option><option value="http://localhost:11434/v1" data-label="Ollama">Ollama · trên máy</option></select>
+      <label for="compatible-base">Base URL</label><input id="compatible-base" type="url" maxlength="300" placeholder="https://…/v1 (xem trang tài liệu của nhà cung cấp)" spellcheck="false" autocomplete="off">
+      <label for="compatible-label">Tên hiển thị</label><input id="compatible-label" maxlength="40" value="VietAPI" spellcheck="false" autocomplete="off">
+      <label for="compatible-key">API key</label><input id="compatible-key" type="password" maxlength="4096" autocomplete="off" spellcheck="false" placeholder="Dán key của nhà cung cấp">
+      <label for="compatible-model">Model chat</label><div class="compatible-model-row"><input id="compatible-model" list="compatible-models" maxlength="128" placeholder="vd. claude-sonnet-5.5, gpt-6-sol" spellcheck="false" autocomplete="off"><button class="button subtle" type="button" id="compatible-fetch">Lấy danh sách</button></div>
+      <datalist id="compatible-models"></datalist>
+      <label for="compatible-image-model">Model tạo ảnh · tùy chọn</label><input id="compatible-image-model" list="compatible-models" maxlength="128" placeholder="vd. gpt-image-2 · để trống nếu không cần" spellcheck="false" autocomplete="off">
+      <div class="chat-settings-actions"><button class="button primary" id="compatible-save" type="submit">Lưu và dùng</button><button class="button subtle" id="compatible-clear" type="button" disabled>Xóa kết nối</button></div>
+      <p id="compatible-status" role="status" aria-live="polite"></p>
+    </form>
+    </details>
     <details id="openai-settings"><summary>OpenAI · tùy chọn khác</summary>
     <div class="chat-settings-heading"><b>Kết nối OpenAI</b><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">Lấy API key ↗</a></div>
     <p>Key chỉ giữ trong bộ nhớ server đến khi tắt app. GPT dùng hạn mức tài khoản API của bạn.</p>
