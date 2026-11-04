@@ -88,6 +88,20 @@ def vgg_assets() -> None:
 def artwork_assets() -> None:
     sys.path.insert(0,str(ROOT))
     from fsmart.artworks import ARTWORK
+    from fsmart.style_library import STYLES
+    for item in STYLES:
+        if item['key'] == 'van-gogh-wheat-field':
+            continue
+        target = WEIGHTS/'artworks'/item['filename']
+        if target.is_file():
+            with target.open('rb') as stream:
+                if hashlib.file_digest(stream,'sha256').hexdigest()==item['sha256']:continue
+            target.unlink()  # stale or damaged copy: fetch it again
+        download(item['download_url'],target)
+        with target.open('rb') as stream:
+            if hashlib.file_digest(stream,'sha256').hexdigest()!=item['sha256']:
+                target.unlink(missing_ok=True);raise ValueError(f"Style {item['key']} checksum mismatch; upstream may have changed")
+    (WEIGHTS/'artworks/style-library.json').write_text(json.dumps(STYLES,ensure_ascii=False,indent=1),'utf-8')
     path=download(ARTWORK['download_url'],WEIGHTS/'artworks'/ARTWORK['filename'])
     with path.open('rb') as stream:
         if hashlib.file_digest(stream,'sha256').hexdigest()!=ARTWORK['sha256']:raise ValueError('Artwork checksum mismatch; upstream may have changed')

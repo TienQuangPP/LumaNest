@@ -37,7 +37,7 @@ function scheduleStylePreview(){
   clearTimeout(stylePreviewTimer);invalidateStudioPreview();
   if(studioTool!=='art'||!state.selected)return;
   hidePreviewResult();colourSourceOutput=null;
-  if(state.style==='custom'){previewStatus.textContent='Chọn ảnh phong cách rồi tạo tác phẩm để xem kết quả.';return;}
+  if(state.style==='custom'){previewStatus.textContent=state.libraryStyle?'Bấm Tạo tác phẩm để áp tranh đã chọn (VGG19 trên máy, khoảng 15 giây với GPU).':'Chọn ảnh phong cách rồi tạo tác phẩm để xem kết quả.';return;}
   previewStatus.textContent='Đang chuẩn bị mẫu vừa chọn…';
   stylePreviewTimer=setTimeout(()=>previewStyle().catch(error=>{if(error.name!=='AbortError')previewStatus.textContent=error.message;}),240);
 }

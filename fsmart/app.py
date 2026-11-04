@@ -635,6 +635,22 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
     def styles():
         return [{'id': key, 'name': name, 'description': description} for key, name, description in [('candy', 'Candy', 'Màu rực rỡ, nét cọ mềm'), ('mosaic', 'Mosaic', 'Họa tiết tranh ghép'), ('rain_princess', 'Rain Princess', 'Nét cọ dày, gam màu ấm'), ('udnie', 'Udnie', 'Hình khối và màu trừu tượng'), ('custom', 'Style của bạn', 'Tải ảnh style, tối ưu bằng VGG19')]]
 
+    @app.get('/api/style-library')
+    def style_library_list():
+        from . import style_library
+        return style_library.listing(settings)
+
+    @app.get('/api/style-library/{key}/thumb')
+    def style_library_thumb(key: str):
+        from . import style_library
+        if key not in style_library.BY_KEY:
+            raise HTTPException(404, 'Không có phong cách này trong thư viện.')
+        try:
+            data = style_library.thumbnail(settings, key)
+        except (FileNotFoundError, ValueError):
+            raise HTTPException(404, 'Chưa tải tranh này. Chạy scripts/fetch_assets.py --only artworks.') from None
+        return StreamingResponse(io.BytesIO(data), media_type='image/jpeg', headers={'Cache-Control': 'private, max-age=86400'})
+
     @app.get('/api/style-artworks/van-gogh/image')
     def van_gogh_preview():
         from .artworks import reference
@@ -664,7 +680,7 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
             chat.plans.failed(plan_id, photo_id, job_id)
             store.update_job(job_id, 'error', 1, str(exc)[:300])
 
-    def style_job(job_id, photo_id, style_id, strength, steps, reference_path, recipe=None, plan_id=None, profile='fast'):
+    def style_job(job_id, photo_id, style_id, strength, steps, reference_path, recipe=None, plan_id=None, profile='fast', label=None, extra=None):
         try:
             started = time.perf_counter()
             store.update_job(job_id, 'running', .05, 'Đang nạp model')
@@ -690,12 +706,12 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
                 output_id, cached = bulk.render(photo_or_404(photo_id), style_id, strength, profile, progress, recipe.title if recipe else None)
             if style_id == 'custom':
                 cached = False
-                details={'profile':'vgg512','steps':steps,'strength':strength}
+                details={'profile':'vgg512','steps':steps,'strength':strength,**(extra or {})}
                 if recipe and recipe.engine=='artwork':
                     from .artworks import ARTWORK
                     details.update(engine='artwork',reference=ARTWORK)
-                output_id = save_output(store,settings,output,photo_id,style_id,recipe.title if recipe else None,details)
-            store.update_job(job_id, 'done', 1, 'Ảnh đã sẵn sàng', {'output_id': output_id, 'cached': cached, 'seconds': round(time.perf_counter()-started, 3), 'profile': profile if style_id!='custom' else 'vgg512', 'style_label': recipe.title if recipe else None, 'image_url': f'/api/outputs/{output_id}/image', 'download_url': f'/api/outputs/{output_id}/image?download=true'})
+                output_id = save_output(store,settings,output,photo_id,style_id,recipe.title if recipe else label,details)
+            store.update_job(job_id, 'done', 1, 'Ảnh đã sẵn sàng', {'output_id': output_id, 'cached': cached, 'seconds': round(time.perf_counter()-started, 3), 'profile': profile if style_id!='custom' else 'vgg512', 'style_label': recipe.title if recipe else label, 'image_url': f'/api/outputs/{output_id}/image', 'download_url': f'/api/outputs/{output_id}/image?download=true'})
         except Exception as exc:
             if isinstance(exc, ChatUnavailable):
                 log.warning('Style reference generation failed: %s', exc)
@@ -741,15 +757,32 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
         return {'job_id': job_id}
 
     @app.post('/api/stylize', status_code=202)
-    async def stylize(request: Request, photo_id: str = Form(...), style_id: str = Form(...), strength: float = Form(.8, ge=0, le=1), steps: int = Form(150, ge=20, le=300), style_image: UploadFile | None = File(None), profile: Literal['fast', 'balanced', 'quality'] = Form('fast')):
+    async def stylize(request: Request, photo_id: str = Form(...), style_id: str = Form(...), strength: float = Form(.8, ge=0, le=1), steps: int = Form(150, ge=20, le=300), style_image: UploadFile | None = File(None), profile: Literal['fast', 'balanced', 'quality'] = Form('fast'), library_key: str | None = Form(None, max_length=64)):
         photo_or_404(photo_id)
         if style_id not in {'candy', 'mosaic', 'rain_princess', 'udnie', 'custom'}:
             raise HTTPException(422, 'Phong cách không hợp lệ.')
         reference_path = None
         reference_hash = None
-        if style_id == 'custom':
+        label = extra = None
+        if style_id == 'custom' and library_key:
+            from . import style_library
+            item = style_library.BY_KEY.get(library_key)
+            if not item:
+                raise HTTPException(422, 'Phong cách không có trong thư viện.')
+            if not models.status().get('custom_ready'):
+                raise HTTPException(503, 'Cần tải trọng số VGG19. Chạy scripts/fetch_assets.py --only vgg.')
+            try:
+                reference = style_library.load(settings, library_key)
+            except (FileNotFoundError, ValueError):
+                raise HTTPException(503, 'Chưa tải hoặc hỏng tranh này. Chạy scripts/fetch_assets.py --only artworks.') from None
+            reference_hash = 'library:' + library_key
+            reference_path = settings.data_dir / 'styles' / f'{uid()}.png'
+            reference.save(reference_path, 'PNG')
+            label = item['name']
+            extra = {'engine': 'library', 'reference': {k: item[k] for k in ('key', 'title', 'artist', 'source_url', 'licence')}}
+        elif style_id == 'custom':
             if not style_image:
-                raise HTTPException(422, 'Cần tải ảnh phong cách.')
+                raise HTTPException(422, 'Cần tải ảnh phong cách hoặc chọn một tranh trong thư viện.')
             image = await read_upload(style_image)
             reference_hash = hashlib.sha256(image.tobytes()).hexdigest()
             reference_path = settings.data_dir / 'styles' / f'{uid()}.jpg'
@@ -761,7 +794,7 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
                 reference_path.unlink(missing_ok=True)
             raise
         if created:
-            executor.submit(style_job, job_id, photo_id, style_id, strength, steps, reference_path, profile=profile)
+            executor.submit(style_job, job_id, photo_id, style_id, strength, steps, reference_path, profile=profile, label=label, extra=extra)
         elif reference_path:
             reference_path.unlink(missing_ok=True)
         return {'job_id': job_id}

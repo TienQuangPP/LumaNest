@@ -537,3 +537,128 @@
     max-height: none !important;
   }
 }
+
+/* Built-in style library: a filterable grid of public-domain paintings. */
+#page-studio .style-library {
+  margin: 4px 0 12px;
+  padding: 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+#page-studio .style-library-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+#page-studio .style-library-head b {
+  color: var(--text);
+  font-size: 13px;
+}
+
+#page-studio .style-library-head small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+#page-studio .style-library-groups {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+#page-studio .library-chip {
+  flex: none;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#page-studio .library-chip:hover {
+  border-color: var(--glass-border-hover);
+  color: var(--text);
+}
+
+#page-studio .library-chip.active {
+  background: var(--gradient-brand);
+  border-color: transparent;
+  color: var(--text-on-brand);
+}
+
+#page-studio .style-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+}
+
+#page-studio .library-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#page-studio .library-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: calc(var(--radius-md) - 3px);
+  background: var(--surface-2);
+}
+
+#page-studio .library-card-name {
+  font-size: 12px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+#page-studio .library-card:hover {
+  border-color: var(--glass-border-hover);
+}
+
+#page-studio .library-card:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+#page-studio .library-card.selected {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--accent-fuchsia);
+}
+
+#page-studio .library-card:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+#page-studio .style-library-picked {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--text);
+}
