@@ -188,7 +188,7 @@ def test_image_provider_error_releases_plan_for_explicit_retry(tmp_path):
             return structured(REFERENCE)
         attempts.append(url)
         if len(attempts) == 1:
-            return response({'error': KEY}, 429)
+            return response({'error': {'message': f'insufficient_quota for {KEY}', 'type': 'insufficient_quota'}}, 429)  # not retried
         return response({'data': [{'b64_json': base64.b64encode(png('blue')).decode()}]})
 
     with client_for(tmp_path, ChatService(api_key=KEY, post=post)) as client:
@@ -197,7 +197,7 @@ def test_image_provider_error_releases_plan_for_explicit_retry(tmp_path):
         payload = {'photo_id': photo, 'plan_id': plan['id']}
         first_id = client.post('/api/stylize/from-chat', json=payload).json()['job_id']
         failed = wait_job(client, first_id)
-        assert failed['status'] == 'error' and KEY not in json.dumps(failed)
+        assert failed['status'] == 'error' and KEY not in json.dumps(failed) and 'insufficient_quota' in failed['message']
         second_id = client.post('/api/stylize/from-chat', json=payload).json()['job_id']
         assert second_id != first_id and wait_job(client, second_id)['status'] == 'done'
         assert len(attempts) == 2
