@@ -1,10 +1,13 @@
 """Gemini text input and reference image output; credentials stay in headers."""
-import re
+import logging, re, time
 import requests
 
 DEFAULT_MODEL='gemini-3.5-flash-lite'
 IMAGE_MODELS=('gemini-3.1-flash-lite-image','gemini-nano-banana-2.1','gemini-3.1-flash-image')
 BASE_URL='https://generativelanguage.googleapis.com/v1beta/models/'
+TRANSIENT={500,502,503,504}  # Google's "overloaded / try again" family
+RETRY_DELAYS=(1.5,4.0)
+log=logging.getLogger(__name__)
 
 
 def normalize_key(value):
@@ -37,20 +40,26 @@ def generate(post,key,model,instructions,message,history,schema=None):
 def _request(post,key,model,body,timeout=(5,60)):
     from .chat import ChatUnavailable
     if not key:raise ChatUnavailable('Chưa nhập Gemini API key. Mở Cài đặt trợ lý để kết nối hoặc chọn Qwen trên máy.',409)
-    try:
-        response=post(BASE_URL+model+':generateContent',headers={'x-goog-api-key':key,'Content-Type':'application/json'},
-                      json=body,timeout=timeout,allow_redirects=False)
-    except requests.RequestException:
-        raise ChatUnavailable('Không kết nối được Gemini. Kiểm tra Internet rồi thử lại.') from None
+    for attempt in range(len(RETRY_DELAYS)+1):
+        try:
+            response=post(BASE_URL+model+':generateContent',headers={'x-goog-api-key':key,'Content-Type':'application/json'},
+                          json=body,timeout=timeout,allow_redirects=False)
+        except requests.RequestException:
+            raise ChatUnavailable('Không kết nối được Gemini. Kiểm tra Internet rồi thử lại.') from None
+        if response.status_code not in TRANSIENT or attempt==len(RETRY_DELAYS):break
+        log.warning('Gemini %s returned HTTP %s; retrying (%s/%s)',model,response.status_code,attempt+1,len(RETRY_DELAYS))
+        time.sleep(RETRY_DELAYS[attempt])
     return _decode_response(response)
 
 
 def _decode_response(response):
     from .chat import ChatUnavailable
+    if response.status_code!=200:log.warning('Gemini returned HTTP %s',response.status_code)
     if response.status_code in {401,403}:raise ChatUnavailable('Gemini từ chối key hoặc quyền truy cập. Kiểm tra key trong Google AI Studio.',502)
     if response.status_code==429:raise ChatUnavailable('Gemini báo giới hạn lượt gọi hoặc hạn mức. Thử lại sau hoặc chọn Qwen.',429)
     if response.status_code in {400,404}:raise ChatUnavailable('Gemini không chấp nhận key hoặc model/cấu hình. Kiểm tra key, model và quyền truy cập của tài khoản.',502)
-    if response.status_code!=200:raise ChatUnavailable('Gemini chưa trả lời được. Thử lại sau hoặc chọn Qwen.',502)
+    if response.status_code==503:raise ChatUnavailable('Gemini đang quá tải (mã 503), đã tự thử lại 3 lần. Đợi một lát, đổi sang model Gemini khác trong Cài đặt trợ lý, hoặc chọn Qwen.',502)
+    if response.status_code!=200:raise ChatUnavailable(f'Gemini chưa trả lời được (mã {response.status_code}), đã tự thử lại. Thử lại sau hoặc chọn Qwen.',502)
     try:
         data=response.json()
         if not isinstance(data,dict):raise ValueError('Invalid response')

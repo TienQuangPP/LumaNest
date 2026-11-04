@@ -146,3 +146,31 @@ def test_curated_reference_preserved_and_recipe_recorded(tmp_path,monkeypatch):
         follow=c.post('/api/chat',json={'message':'nhạt hơn','mode':'style','history':[{'role':'user','content':'vangot'}]}).json()
         assert follow['style_plan']['engine']=='artwork' and follow['style_plan']['strength']==.5
     with pytest.raises(ValueError):StyleRecipe(engine='artwork',preset='candy',strength=.6,steps=50,title='Bad',reply='Bad',reference_prompt='../../outside')
+
+
+def test_transient_gemini_errors_are_retried(monkeypatch):
+    import fsmart.gemini as gemini
+    monkeypatch.setattr(gemini,'RETRY_DELAYS',(0,0))
+    replies=[response(status=503),response(status=500),response('Xin chào')]
+    calls=[]
+    def post(*a,**k):calls.append(a[0]);return replies.pop(0)
+    assert gemini.generate(post,KEY,'gemini-3.8-flash','sys','hi',[])=='Xin chào' and len(calls)==3
+
+
+@pytest.mark.parametrize('status,needle',[(503,'quá tải (mã 503)'),(504,'mã 504')])
+def test_persistent_gemini_overload_names_the_status(monkeypatch,status,needle):
+    import fsmart.gemini as gemini
+    monkeypatch.setattr(gemini,'RETRY_DELAYS',(0,0))
+    calls=[]
+    def post(*a,**k):calls.append(1);return response(status=status)
+    with pytest.raises(ChatUnavailable) as caught:gemini.generate(post,KEY,'gemini-3.8-flash','sys','hi',[])
+    assert needle in str(caught.value) and caught.value.status_code==502 and len(calls)==3 and KEY not in str(caught.value)
+
+
+def test_client_errors_are_not_retried(monkeypatch):
+    import fsmart.gemini as gemini
+    monkeypatch.setattr(gemini,'RETRY_DELAYS',(0,0))
+    calls=[]
+    def post(*a,**k):calls.append(1);return response(status=400)
+    with pytest.raises(ChatUnavailable):gemini.generate(post,KEY,'gemini-3.8-flash','sys','hi',[])
+    assert len(calls)==1
