@@ -150,6 +150,9 @@ def create_app(settings: Settings | None = None, model_service=None, chat_servic
         response.headers.setdefault('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
         if request.url.path.startswith('/api/'):
             response.headers.setdefault('Cache-Control','no-store')
+        elif request.url.path == '/' or request.url.path.endswith('.html'):
+            # The page names its CSS/JS with ?v=…; it must be revalidated (cheap ETag check) or an update never shows.
+            response.headers.setdefault('Cache-Control','no-cache')
         return response
 
     @app.get('/docs',include_in_schema=False)
