@@ -54,19 +54,28 @@ async function previewStyle(){
   if(!response.ok){const data=await response.json();throw new Error(data.detail||'Không xem trước được phong cách.');}
   const blob=await response.blob();if(controller.signal.aborted||epoch!==studioPreviewEpoch||state.selected?.id!==photo||state.style!==style)return;
   if(stylePreviewURL)URL.revokeObjectURL(stylePreviewURL);stylePreviewURL=URL.createObjectURL(blob);
-  oldShowOutput(stylePreviewURL,'');$('download-art').classList.add('hidden');
+  showComparison(stylePreviewURL,'');$('download-art').classList.add('hidden');
   const name=state.styles.find(item=>item.id===style)?.name||style;$('after-label').textContent='Xem trước · '+name;
   previewStatus.textContent=`${name} · xem trước 512 px. Bấm Tạo ảnh nghệ thuật để lưu.`;
 }
 document.addEventListener('fsm:style-picked',()=>{if(studioTool!=='art')setStudioTool('art');else scheduleStylePreview();});
-const compactResetStudio=resetStudio;resetStudio=function(){
-  compactResetStudio();subjectVersion++;subjectPoints=[];subjectMasks=[];subjectMask=null;subjectWorking=false;
+function resetStudio(){
+  invalidateStudioPreview();
+  $('canvas-placeholder').classList.toggle('hidden',!!state.selected);$('before-image').classList.toggle('hidden',!state.selected);$('after-wrap').classList.add('hidden');$('compare-control').classList.add('hidden');$('before-label').classList.add('hidden');$('after-label').classList.add('hidden');$('download-art').classList.add('hidden');
+  $('studio-photo-name').textContent=state.selected?.name||'Chọn một bức ảnh để bắt đầu';$('run-style').disabled=!state.selected||!!state.styleGenerating;if(state.selected)$('before-image').src=`/api/photos/${state.selected.id}/image`;syncPhotoPickers();
+  colourSourceOutput=null;colourPreviewActive=false;$('colour-source').value='original';
+  subjectVersion++;subjectPoints=[];subjectMasks=[];subjectMask=null;subjectWorking=false;
   $('subject-masks').replaceChildren();$('subject-overlay').classList.add('hidden');$('subject-dots').replaceChildren();$('subject-save').disabled=true;$('subject-segment').disabled=false;
   previewStatus.textContent='';$('subject-status').textContent=state.selected?'Bấm điểm trên chủ thể cần giữ.':'Chọn ảnh để bắt đầu.';
   $('subject-edit').classList.add('hidden');if(state.selected)$('subject-image').src=`/api/photos/${state.selected.id}/image`;
   showSubjectStage(studioTool==='subject'&&!!state.selected);if(studioTool==='art')scheduleStylePreview();
-};
-const compactShowOutput=showOutput;showOutput=function(image,download){compactShowOutput(image,download);clearTimeout(stylePreviewTimer);previewStatus.textContent='Phiên bản đã lưu';showSubjectStage(false);if(studioTool==='subject')$('subject-edit').classList.remove('hidden');};
+}
+// A saved result (new artwork, history item, colour or subject version); previews use showComparison instead.
+function showOutput(image,download){
+  invalidateStudioPreview();showComparison(image,download);$('after-label').textContent='Sau sáng tạo';
+  colourSourceOutput=image.match(/^\/api\/outputs\/([0-9a-f]{32})\/image/)?.[1]||null;colourPreviewActive=false;
+  clearTimeout(stylePreviewTimer);previewStatus.textContent='Phiên bản đã lưu';showSubjectStage(false);if(studioTool==='subject')$('subject-edit').classList.remove('hidden');
+}
 function showSubjectStage(active){subjectStage.classList.toggle('hidden',!active);$('comparison').classList.toggle('hidden',active);if(active){$('compare-control').classList.add('hidden');$('download-art').classList.add('hidden');}}
 function drawSubjectPoints(){
   $('subject-dots').replaceChildren(...subjectPoints.map(point=>{const dot=el('span',`subject-dot ${point.label?'positive':'negative'}`,point.label?'+':'−');dot.style.left=point.x*100+'%';dot.style.top=point.y*100+'%';return dot;}));

@@ -5,7 +5,7 @@ function showSearchState(kind, detail = '') {
   const messages = {
     idle: ['Bắt đầu bằng một khuôn mặt', 'Chọn ảnh tham chiếu. App sẽ tự tìm ảnh có khuôn mặt đã chọn.'],
     detecting: ['Đang đọc ảnh tham chiếu…', 'Đang phát hiện khuôn mặt. Kết quả sẽ được tìm tự động sau bước này.'],
-    loading: ['Đang tìm trong album…', 'Đang so sánh khuôn mặt đã chọn với các ảnh đã lập chỉ mục.'],
+    loading: ['Đang tìm trong album…', 'Đang so sánh khuôn mặt đã chọn với các ảnh trong bộ.'],
     error: ['Chưa tìm kiếm được', detail],
     empty: ['Chưa có ảnh vượt ngưỡng', detail || 'Thử một ảnh tham chiếu rõ hơn hoặc kiểm tra album đã xử lý xong.'],
     noalbum: ['Chưa chọn album', 'Tạo album và thêm ảnh trong Thư viện ảnh trước khi tìm.']
@@ -82,7 +82,7 @@ function renderResults(result) {
   const notes = [];
   if (counts.processing) notes.push(`${counts.processing} ảnh đang xử lý. Kết quả sẽ tự cập nhật.`);
   if (counts.failed) notes.push(`${counts.failed} ảnh lỗi xử lý. Kiểm tra trong Thư viện ảnh.`);
-  if (counts.outdated) notes.push(`${counts.outdated} ảnh cần lập chỉ mục lại do phiên bản model thay đổi.`);
+  if (counts.outdated) notes.push(`${counts.outdated} ảnh cần bấm Quét lại khuôn mặt (ở mục Ảnh) do model đã thay đổi.`);
   $('search-notice').textContent = notes.join(' ');
   $('search-notice').classList.toggle('hidden', !notes.length);
 }

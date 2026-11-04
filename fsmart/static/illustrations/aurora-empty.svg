@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" fill="none">
+  <defs>
+    <radialGradient id="aurora-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#ec4899" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="card-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0.6"/>
+    </linearGradient>
+    <linearGradient id="card-grad-2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="stroke-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="80" r="70" fill="url(#aurora-glow)"/>
+  <!-- Background Card -->
+  <rect x="35" y="45" width="80" height="60" rx="12" transform="rotate(-10 75 75)" fill="#1e1b4b" fill-opacity="0.8" stroke="url(#stroke-grad)" stroke-width="1.5"/>
+  <rect x="43" y="53" width="64" height="44" rx="8" transform="rotate(-10 75 75)" fill="url(#card-grad-1)" fill-opacity="0.2"/>
+  <!-- Foreground Card -->
+  <rect x="75" y="45" width="90" height="70" rx="14" transform="rotate(6 120 80)" fill="#131728" fill-opacity="0.9" stroke="url(#stroke-grad)" stroke-width="1.5"/>
+  <rect x="85" y="55" width="70" height="50" rx="10" transform="rotate(6 120 80)" fill="url(#card-grad-2)" fill-opacity="0.25"/>
+  <!-- Mountains in foreground card -->
+  <path d="M92 95 L108 78 L122 92 L132 82 L148 95 Z" transform="rotate(6 120 80)" fill="#8b5cf6" fill-opacity="0.4"/>
+  <circle cx="138" cy="68" r="5" transform="rotate(6 120 80)" fill="#f59e0b" fill-opacity="0.8"/>
+  <!-- Sparkles -->
+  <path d="M155 30 L157 37 L164 39 L157 41 L155 48 L153 41 L146 39 L153 37 Z" fill="#22d3ee"/>
+  <path d="M40 35 L41.5 40 L46.5 41.5 L41.5 43 L40 48 L38.5 43 L33.5 41.5 L38.5 40 Z" fill="#ec4899"/>
+  <circle cx="170" cy="65" r="2" fill="#8b5cf6"/>
+  <circle cx="30" cy="90" r="2.5" fill="#f59e0b"/>
+</svg>

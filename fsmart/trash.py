@@ -61,6 +61,7 @@ class PhotoTrash:
                     if row['extension']:
                         paths.append(self.settings.data_dir/'originals'/f'{row["id"]}.{row["extension"]}')
                 paths.extend(self.settings.data_dir/'outputs'/f'{row["id"]}.png' for row in outputs)
+                paths.extend(self.settings.data_dir/'output-thumbs'/f'{row["id"]}.jpg' for row in outputs)
                 paths.extend(self.settings.data_dir/'masks'/f'{row["id"]}.png' for row in masks)
                 db.execute(f'DELETE FROM photos WHERE id IN ({marks})',ids)
             failures=0

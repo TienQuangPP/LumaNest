@@ -26,6 +26,16 @@ def test_release_excludes_private_data_and_generated_files(tmp_path, monkeypatch
         assert source.testzip() is None
 
 
+def test_release_ships_bundled_fonts(tmp_path, monkeypatch):
+    monkeypatch.setattr(package_release, 'ROOT', tmp_path)
+    (tmp_path / 'VERSION').write_text('1.0.0')
+    font = tmp_path / 'fsmart' / 'static' / 'fonts' / 'Face.ttf'
+    font.parent.mkdir(parents=True)
+    font.write_bytes(b'\x00\x01\x00\x00' + bytes(range(256)))
+    with zipfile.ZipFile(package_release.build()[0]) as source:
+        assert 'LumaNest/fsmart/static/fonts/Face.ttf' in source.namelist()
+
+
 def test_release_blocks_private_key_material(tmp_path, monkeypatch):
     monkeypatch.setattr(package_release, 'ROOT', tmp_path)
     (tmp_path / 'VERSION').write_text('1.0.0')

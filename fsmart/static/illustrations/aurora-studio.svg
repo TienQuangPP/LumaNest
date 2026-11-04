@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" fill="none">
+  <defs>
+    <radialGradient id="studio-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ec4899" stop-opacity="0.3"/>
+      <stop offset="60%" stop-color="#8b5cf6" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#131728" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wand-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="50%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="80" r="70" fill="url(#studio-glow)"/>
+  <!-- Magic Wand -->
+  <line x1="55" y1="125" x2="125" y2="55" stroke="url(#wand-grad)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="55" y1="125" x2="80" y2="100" stroke="#1b2038" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="125" cy="55" r="4" fill="#ffffff"/>
+  <!-- Burst Stars -->
+  <path d="M145 35 L147 43 L155 45 L147 47 L145 55 L143 47 L135 45 L143 43 Z" fill="#f59e0b"/>
+  <path d="M120 22 L121 28 L127 29 L121 30 L120 36 L119 30 L113 29 L119 28 Z" fill="#22d3ee"/>
+  <path d="M162 65 L163 69 L167 70 L163 71 L162 75 L161 71 L157 70 L161 69 Z" fill="#ec4899"/>
+  <!-- Palette Shape -->
+  <circle cx="75" cy="65" r="18" fill="#1e1b4b" stroke="#8b5cf6" stroke-width="1.5" stroke-opacity="0.6"/>
+  <circle cx="70" cy="58" r="3" fill="#22d3ee"/>
+  <circle cx="82" cy="62" r="3" fill="#ec4899"/>
+  <circle cx="76" cy="74" r="3" fill="#f59e0b"/>
+</svg>

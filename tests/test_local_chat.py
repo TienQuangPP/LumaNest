@@ -1,4 +1,9 @@
 import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
 from types import SimpleNamespace
 import pytest
 from fsmart.chat import ChatService,ChatInput,ChatTurn,ChatUnavailable
@@ -57,3 +62,40 @@ def test_untrusted_manifest_fails_before_execution(tmp_path,monkeypatch):
 def test_vietnamese_guide_topics_do_not_confuse_diacritics(message,expected):
     service=ChatService(api_key='')
     assert expected in service.reply(ChatInput(message=message))['reply']
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Windows job objects')
+def test_chat_worker_dies_when_server_is_killed_hard(tmp_path):
+    # A crash or a Task Manager kill skips atexit; the worker must still not outlive the server.
+    root = Path(__file__).resolve().parents[1]
+    script = tmp_path / 'server.py'
+    script.write_text(
+        'import subprocess, sys, time\n'
+        f'sys.path.insert(0, {str(root)!r})\n'
+        'from fsmart.local_chat import bind_to_this_process\n'
+        "worker = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+        'assert bind_to_this_process(worker)\n'
+        'print(worker.pid, flush=True)\n'
+        'time.sleep(60)\n', encoding='utf-8')
+    server = subprocess.Popen([sys.executable, str(script)], stdout=subprocess.PIPE, text=True)
+    worker_pid = int(server.stdout.readline())
+    assert _alive(worker_pid)
+    server.kill()
+    server.wait(10)
+    deadline = time.monotonic() + 10
+    while _alive(worker_pid) and time.monotonic() < deadline:
+        time.sleep(0.1)
+    assert not _alive(worker_pid)
+
+
+def _alive(pid):
+    import ctypes
+    kernel32 = ctypes.WinDLL('kernel32')
+    kernel32.OpenProcess.restype = ctypes.c_void_p
+    handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return False
+    code = ctypes.c_ulong()
+    kernel32.GetExitCodeProcess(ctypes.c_void_p(handle), ctypes.byref(code))
+    kernel32.CloseHandle(ctypes.c_void_p(handle))
+    return code.value == 259  # STILL_ACTIVE

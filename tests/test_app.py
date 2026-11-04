@@ -82,10 +82,16 @@ def test_end_to_end_album_search_style_download_and_delete(client):
     assert rendered.status_code == 200 and rendered.content.startswith(b'\x89PNG')
     assert 'attachment' in rendered.headers['content-disposition']
     assert len(client.get('/api/outputs').json()) == 1
+    preview = client.get(f"{result['image_url']}?thumbnail=true")
+    assert preview.status_code == 200 and preview.content.startswith(bytes([0xff, 0xd8]))
+    assert 'private' in preview.headers['cache-control']
     archive = client.post('/api/export', json={'photo_ids': [found[0]['id']]} )
     assert archive.content.startswith(b'PK')
     assert client.delete(f'/api/photos/{found[0]["id"]}').status_code == 200
     assert client.get(result['image_url']).status_code == 404
+    assert client.get(f"{result['image_url']}?thumbnail=true").status_code == 404
+    assert client.post('/api/trash/purge', json={'photo_ids': [found[0]['id']]}).status_code == 200
+    assert not list((client.app.state.settings.data_dir / 'output-thumbs').glob('*.jpg'))
     assert client.get(f'/api/photos/{found[0]["id"]}/image').status_code == 404
 
 
@@ -191,3 +197,10 @@ def test_detection_resize_does_not_reduce_alignment_source_resolution(tmp_path, 
     assert len(result) == 1 and result[0]['bbox'] == [480, 380, 570, 470]
     assert torch.equal(calls[1], torch.flip(calls[0], [3]))
     assert np.linalg.norm(result[0]['embedding']) == pytest.approx(1.)
+
+
+def test_favicon_is_served_for_browsers_that_ask_for_it(client):
+    response = client.get('/favicon.ico')
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'image/x-icon'
+    assert response.content[:4] == b'\x00\x00\x01\x00'  # ICO header

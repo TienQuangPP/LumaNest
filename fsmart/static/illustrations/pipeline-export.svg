@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <radialGradient id="pip4-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#06b6d4" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shield-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="50" fill="url(#pip4-glow)"/>
+  <!-- Holographic Shield & Security Crest -->
+  <path d="M60 22 L88 34 V60 C88 78 76 92 60 98 C44 92 32 78 32 60 V34 L60 22 Z" fill="#141a35" stroke="url(#shield-grad)" stroke-width="2"/>
+  <!-- Checkmark Emblem -->
+  <path d="M48 58 L56 66 L74 48" stroke="#10b981" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Orbital Security Rings -->
+  <ellipse cx="60" cy="60" rx="44" ry="16" transform="rotate(-20 60 60)" stroke="rgba(16,185,129,0.4)" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <!-- Sparkling Stars -->
+  <path d="M96 68 L98 74 L104 76 L98 78 L96 84 L94 78 L88 76 L94 74 Z" fill="#10b981"/>
+  <circle cx="26" cy="40" r="3" fill="#38bdf8"/>
+  <circle cx="86" cy="22" r="2" fill="#f59e0b"/>
+</svg>

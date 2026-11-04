@@ -161,7 +161,7 @@ class SemanticIndex:
                 row=self.store.one('''SELECT e.embedding FROM semantic_embeddings e JOIN active_photos p ON p.id=e.photo_id
                   WHERE p.id=? AND p.album_id=? AND e.model_key=? AND e.digest=p.digest''',(photo_id,album_id,MODEL_KEY))
                 if not row:
-                    raise HTTPException(409,'Ảnh này chưa có chỉ mục AI trong bộ hiện tại. Bấm cập nhật AI.')
+                    raise HTTPException(409,'Ảnh này chưa được chuẩn bị để tìm tương tự. Mở mục Ảnh, đợi app chuẩn bị xong rồi thử lại.')
                 query=normalized(np.frombuffer(row['embedding'],dtype=np.float32))
             else:
                 query=self.engine.encode(text=text)

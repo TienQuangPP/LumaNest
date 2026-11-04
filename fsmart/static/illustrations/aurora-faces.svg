@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" fill="none">
+  <defs>
+    <radialGradient id="face-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.3"/>
+      <stop offset="70%" stop-color="#8b5cf6" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#131728" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="scan-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="80" r="70" fill="url(#face-glow)"/>
+  <!-- Target Reticle Corners -->
+  <path d="M50 50 L50 40 L60 40" stroke="url(#scan-grad)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M150 50 L150 40 L140 40" stroke="url(#scan-grad)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M50 110 L50 120 L60 120" stroke="url(#scan-grad)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M150 110 L150 120 L140 120" stroke="url(#scan-grad)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Stylized Head Silhouette -->
+  <circle cx="100" cy="72" r="28" fill="#1b2038" stroke="url(#scan-grad)" stroke-width="2"/>
+  <path d="M68 122 C68 102 82 98 100 98 C118 98 132 102 132 122" fill="#1b2038" stroke="url(#scan-grad)" stroke-width="2"/>
+  <!-- Face grid mesh dots / lines -->
+  <circle cx="92" cy="70" r="3" fill="#22d3ee"/>
+  <circle cx="108" cy="70" r="3" fill="#22d3ee"/>
+  <path d="M100 73 L100 80 L96 82" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M94 88 Q100 92 106 88" stroke="#ec4899" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Scan beam line -->
+  <line x1="45" y1="80" x2="155" y2="80" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
+</svg>
