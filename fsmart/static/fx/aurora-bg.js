@@ -107,10 +107,12 @@
 
         if (uTheme > 0.5) {
           // Light mode: airy, ethereal luminosity
-          gl_FragColor = vec4(col, alpha * 0.24);
+          gl_FragColor = vec4(col, alpha * 0.22);
         } else {
-          // Dark mode: rich celestial depth
-          gl_FragColor = vec4(col, alpha * 0.46);
+          // Dark mode: deep celestial twilight — muted & dark in main content area so text contrast is pristine
+          float contentScrim = smoothstep(0.15, 0.75, length((uv - vec2(0.5, 0.65)) * aspect));
+          float darkAlpha = alpha * 0.16 * (0.2 + 0.8 * contentScrim);
+          gl_FragColor = vec4(col, darkAlpha);
         }
       }
     `;
@@ -166,12 +168,12 @@
     const uC4Loc = gl.getUniformLocation(prog, 'uC4');
     const uThemeLoc = gl.getUniformLocation(prog, 'uTheme');
 
-    // Colors state
+    // Colors state - muted 45% in dark mode to preserve high contrast for text
     const darkPalette = [
-      [0.48, 0.23, 0.93],
-      [0.85, 0.27, 0.94],
-      [0.02, 0.71, 0.83],
-      [0.96, 0.62, 0.04]
+      [0.24, 0.12, 0.46],
+      [0.34, 0.11, 0.38],
+      [0.01, 0.26, 0.32],
+      [0.38, 0.22, 0.04]
     ];
     const lightPalette = [
       [0.65, 0.45, 0.95],
@@ -331,9 +333,11 @@
     // Custom event for photos: extract ambient colors
     window.addEventListener('fsm:ambient-photo', (e) => {
       const colors = e.detail;
+      const isDark = document.documentElement.dataset.theme !== 'light';
+      const factor = isDark ? 0.45 : 1.0;
       if (Array.isArray(colors) && colors.length >= 3) {
         for (let i = 0; i < Math.min(colors.length, 4); i++) {
-          targetPalette[i] = [...colors[i]];
+          targetPalette[i] = [colors[i][0] * factor, colors[i][1] * factor, colors[i][2] * factor];
         }
       }
     });

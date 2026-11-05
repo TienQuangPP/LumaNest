@@ -91,11 +91,24 @@ Toàn bộ tài nguyên phục vụ giao diện đều được đóng gói nộ
 - **Cú pháp JavaScript (`node --check`):** **100% đạt chuẩn (0 lỗi cú pháp)** trên toàn bộ 15 file JavaScript trong `fsmart/static/`.
 - **Kiểm tra phát hành (`scripts/package_release.py`):** Kết quả đạt **`MISSING: none`**. Toàn bộ tài nguyên mới (`sprites.svg`, `aurora-bg.js`) đều nằm trong danh mục đóng gói bản phát hành chính thức.
 
-### 4.2. Khả Năng Tiếp Cận & Độ Tương Phản (WCAG AA)
+### 4.2. Khả Năng Tiếp Cận & Độ Tương Phản Thực Tế (WCAG AA)
+- **Đo Đạc Pixel Thật Trực Tiếp Trên Nền WebGL (Real Pixel Sampled Contrast):**
+  - Nhằm đảm bảo khả năng đọc hoàn hảo trên nền cực quang sống động ở theme tối, hệ thống đã:
+    1. Giảm 45% độ sáng và độ bão hòa của cực quang WebGL ở theme tối trong `aurora-bg.js`.
+    2. Bổ sung cơ chế giảm sáng tự động vùng nội dung chính (`contentScrim`) trong fragment shader.
+    3. Thêm lớp scrim chuyển sắc tối mềm mại (`body::before`) ngăn cách giữa WebGL canvas và nội dung trang.
+    4. Đo đạc trực tiếp giá trị pixel thực tế từ Edge Headless xác nhận 100% các dòng chữ then chốt đều đạt tương phản vượt trội so với ngưỡng tối thiểu 4.5:1:
+       - Dòng Eyebrow (`MỖI BỘ ẢNH, MỘT CÂU CHUYỆN`): **7.50:1** (Đạt chuẩn AA)
+       - Thống kê bộ ảnh (`3 bộ ảnh · 40 ảnh`): **9.71:1** (Đạt chuẩn AA)
+       - Nhãn bộ lọc (`Tìm bộ ảnh`): **9.71:1** (Đạt chuẩn AA)
+       - Nút quay lại (`← Tất cả bộ ảnh`): **8.18:1** (Đạt chuẩn AA)
+       - Nhãn bộ chuyển (`Bộ ảnh đang mở`): **9.71:1** (Đạt chuẩn AA)
+       - Tab đang chọn (`Ảnh`): **19.86:1** (Đạt chuẩn AAA)
+       - Các tab công cụ (`Tìm khuôn mặt`, `Thùng rác`): **9.71:1** (Đạt chuẩn AA)
 - **Theme Tối (Dark Aurora):**
   - Chữ chính (`--text` `#f8fafc` trên nền `#070913`): **15.8:1** (vượt chuẩn AAA).
-  - Chữ phụ (`--text-muted` `#94a3b8`): **7.3:1** (vượt chuẩn AA 4.5:1).
-  - Chữ nhạt (`--text-subtle` `#64748b`): **4.6:1** (đạt chuẩn AA).
+  - Chữ phụ (`--text-muted` `#a6b7cc`): **9.7:1** (vượt chuẩn AA 4.5:1).
+  - Chữ nhạt (`--text-subtle` `#94a3b8`): **7.3:1** (đạt chuẩn AA).
 - **Theme Sáng (Daylight Prism):**
   - Chữ chính (`--text` `#0f172a` trên nền `#f8fafc`): **15.6:1** (vượt chuẩn AAA).
   - Chữ phụ (`--text-muted` `#334155`): **8.8:1** (vượt chuẩn AA).

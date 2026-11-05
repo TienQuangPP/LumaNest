@@ -523,7 +523,8 @@ main {
   font-weight: 700;
   letter-spacing: 2px;
   margin-bottom: 16px;
-  color: var(--accent-pink);
+  color: #f472b6;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .eyebrow > span {

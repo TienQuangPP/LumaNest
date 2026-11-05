@@ -30,10 +30,10 @@
     --glass-rim-subtle: inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
     --glass-prismatic: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(139, 92, 246, 0.3) 35%, rgba(236, 72, 153, 0.25) 70%, rgba(6, 182, 212, 0.2) 100%);
 
-    /* Typography Colors (WCAG AA Compliant) */
+    /* Typography Colors (WCAG AA Compliant - Pristine Clarity) */
     --text: #f8fafc;
-    --text-muted: #94a3b8;
-    --text-subtle: #8796ad;
+    --text-muted: #a6b7cc;
+    --text-subtle: #94a3b8;
     --text-on-dark: #ffffff;
     --text-on-brand: #ffffff;
     --scrim: rgba(7, 9, 19, 0.82);
@@ -295,6 +295,17 @@
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Ambient dark scrim over WebGL canvas to guarantee WCAG AA contrast under all text */
+  html[data-theme="dark"] body::before,
+  :root:not([data-theme="light"]) body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 95% 85% at 50% 20%, rgba(7, 9, 19, 0.72) 0%, rgba(7, 9, 19, 0.88) 55%, rgba(7, 9, 19, 0.96) 100%);
+    pointer-events: none;
+    z-index: -2;
   }
 
   /* Accessible focus indicators for keyboard navigation */
