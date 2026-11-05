@@ -241,7 +241,11 @@ function extractAmbientColors(url){
     ry=((event.clientY-rect.top)/rect.height-0.5);
     if(!raf){
       raf=requestAnimationFrame(()=>{
-        if(activeCard)activeCard.style.transform=`perspective(800px) rotateY(${rx*7}deg) rotateX(${-ry*7}deg) translateY(-3px)`;
+        if(activeCard){
+          activeCard.style.transform=`perspective(800px) rotateY(${rx*7}deg) rotateX(${-ry*7}deg) translateY(-3px)`;
+          activeCard.style.setProperty('--spotlight-x', `${Math.round(((event.clientX-rect.left)/rect.width)*100)}%`);
+          activeCard.style.setProperty('--spotlight-y', `${Math.round(((event.clientY-rect.top)/rect.height)*100)}%`);
+        }
         raf=null;
       });
     }

@@ -40,7 +40,20 @@ document.querySelectorAll('[data-page]').forEach(button => button.addEventListen
 async function busy(button, label, operation) { const old = button.textContent; button.disabled = true; button.textContent = label; try { return await operation(); } catch (error) {toast(error.message, true);} finally {button.disabled = button.id==='run-style' && (!state.selected||!!state.styleGenerating); button.textContent = old;} }
 const jobViews=new Map();
 function formatJobMessage(message){return message.replace(/^Đang tối ưu ảnh (\d+)\/(\d+)$/,'Bước tối ưu $1/$2 · 1 ảnh');}
-function renderJobViews(){const views=[...jobViews.values()];$('job-panel').classList.toggle('hidden',!views.length);if(views.length){const view=views[views.length-1];$('job-message').textContent=`${views.length>1?views.length+' tác vụ · ':''}${formatJobMessage(view.message)}`;$('job-progress').value=view.progress;}}
+function renderJobViews(){
+  const views=[...jobViews.values()];
+  $('job-panel').classList.toggle('hidden',!views.length);
+  if(views.length){
+    const view=views[views.length-1];
+    $('job-message').textContent=`${views.length>1?views.length+' tác vụ · ':''}${formatJobMessage(view.message)}`;
+    $('job-progress').value=view.progress;
+    const path=$('brush-progress-path');
+    if(path){
+      const p=Math.max(0,Math.min(1,view.progress||0));
+      path.style.strokeDashoffset=String(240*(1-p));
+    }
+  }
+}
 async function watchJob(jobId){
   if(jobViews.has(jobId))return jobViews.get(jobId).promise;
   const view={message:'Đang chờ xử lý',progress:0,promise:null};jobViews.set(jobId,view);renderJobViews();
@@ -103,5 +116,19 @@ async function loadStyles(){state.styles=await api('/api/styles');$('style-grid'
 $('strength').oninput=()=>{$('strength-value').textContent=`${Math.round(Number($('strength').value)*100)}%`;document.dispatchEvent(new CustomEvent('fsm:style-picked'));};
 $('compare-slider').oninput=()=>$('after-wrap').style.clipPath=`inset(0 0 0 ${Number($('compare-slider').value)}%)`;
 // Base before/after view; studio previews use it directly, saved results go through showOutput (studio.js).
-function showComparison(image,download){$('after-image').src=image;$('after-wrap').classList.remove('hidden');$('compare-control').classList.remove('hidden');$('before-label').classList.remove('hidden');$('after-label').classList.remove('hidden');$('download-art').classList.remove('hidden');$('download-art').href=download;$('compare-slider').value=50;$('after-wrap').style.clipPath='inset(0 0 0 50%)';}
+function showComparison(image,download){
+  const img=$('after-image');
+  img.src=image;
+  img.classList.remove('reveal-art');
+  void img.offsetWidth;
+  img.classList.add('reveal-art');
+  $('after-wrap').classList.remove('hidden');
+  $('compare-control').classList.remove('hidden');
+  $('before-label').classList.remove('hidden');
+  $('after-label').classList.remove('hidden');
+  $('download-art').classList.remove('hidden');
+  $('download-art').href=download;
+  $('compare-slider').value=50;
+  $('after-wrap').style.clipPath='inset(0 0 0 50%)';
+}
 async function start(){clearTimeout(reconnectTimer);try{await refreshHealth();await refreshAlbums();await refreshPhotos();await loadStyles();await refreshOutputs();await restoreFaceSearch();connectionFailed=false;}catch(error){$('connection').className='connection warning';$('connection').replaceChildren(el('i'),document.createTextNode('Đang kết nối lại'));if(!connectionFailed)toast('Chưa kết nối được ứng dụng. Trang sẽ tự thử lại khi server khởi động xong.',true);connectionFailed=true;reconnectTimer=setTimeout(start,3000);}}

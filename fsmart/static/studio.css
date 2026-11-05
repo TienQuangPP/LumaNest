@@ -74,6 +74,86 @@
   max-height: none;
 }
 
+@keyframes revealArtBloom {
+  0% {
+    opacity: 0;
+    filter: brightness(1.6) saturate(1.8) blur(12px);
+    clip-path: circle(0% at 50% 50%);
+  }
+  60% {
+    opacity: 1;
+    filter: brightness(1.15) saturate(1.2) blur(2px);
+    clip-path: circle(75% at 50% 50%);
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1) saturate(1) blur(0);
+    clip-path: circle(150% at 50% 50%);
+  }
+}
+
+.reveal-art {
+  animation: revealArtBloom 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-art {
+    animation: none !important;
+    opacity: 1 !important;
+    clip-path: none !important;
+  }
+}
+
+#strength {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.3) 0%, rgba(139, 92, 246, 0.65) 50%, #ec4899 100%);
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: box-shadow var(--dur-fast), filter var(--dur-fast);
+}
+
+#strength:hover {
+  filter: brightness(1.1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 14px rgba(236, 72, 153, 0.4);
+}
+
+#strength::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #ec4899 45%, #7c3aed 100%);
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), 0 0 10px rgba(236, 72, 153, 0.7);
+  cursor: grab;
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast);
+}
+
+#strength:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 0 18px rgba(236, 72, 153, 0.95);
+}
+
+#strength::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #ec4899 45%, #7c3aed 100%);
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), 0 0 10px rgba(236, 72, 153, 0.7);
+  cursor: grab;
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast);
+}
+
 #page-studio .after-wrap {
   position: absolute;
   inset: 0;
@@ -632,6 +712,8 @@
 }
 
 #page-studio .library-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 130px;
   display: flex;
   flex-direction: column;
   gap: 6px;

@@ -201,6 +201,22 @@
   position: relative;
 }
 
+.photo-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle 140px at var(--spotlight-x, 50%) var(--spotlight-y, 50%), rgba(255, 255, 255, 0.14), transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1;
+}
+
+.photo-card:hover::before {
+  opacity: 1;
+}
+
 .photo-create {
   border: 0;
   background: none;

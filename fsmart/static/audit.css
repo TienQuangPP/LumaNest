@@ -31,6 +31,8 @@
 
 .photo-card {
   position: relative;
+  content-visibility: auto;
+  contain-intrinsic-size: 260px;
 }
 
 .photo-select {
