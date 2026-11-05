@@ -58,6 +58,7 @@ async function toggleFavorite(photo,button){
 // Photos fade in the first time they scroll into view. The gallery re-renders often (favourites, indexing
 // progress), so a photo already shown in this collection never animates again.
 const shownPhotoIds=new Set(),reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
+const hasScrollTimeline=typeof CSS!=='undefined'&&CSS.supports&&CSS.supports('animation-timeline: view()');
 const revealObserver=new IntersectionObserver(entries=>{
   entries.filter(entry=>entry.isIntersecting).forEach((entry,index)=>{
     const card=entry.target;revealObserver.unobserve(card);card.style.setProperty('--reveal-index',index);
@@ -66,7 +67,7 @@ const revealObserver=new IntersectionObserver(entries=>{
     requestAnimationFrame(()=>card.classList.add('revealed'));
   });
 },{rootMargin:'0px 0px -40px 0px'});
-function revealCard(card,id){if(shownPhotoIds.has(id))return;shownPhotoIds.add(id);if(reduceMotion.matches)return;card.classList.add('reveal');revealObserver.observe(card);}
+function revealCard(card,id){if(shownPhotoIds.has(id))return;shownPhotoIds.add(id);if(reduceMotion.matches||hasScrollTimeline)return;card.classList.add('reveal');revealObserver.observe(card);}
 function showGallerySkeleton(){$('gallery').setAttribute('aria-busy','true');$('gallery').replaceChildren(...Array.from({length:8},()=>{const node=el('div','photo-skeleton');node.setAttribute('aria-hidden','true');return node;}));}
 async function refreshPhotos(append=false){
   const album=currentAlbum(),version=++photosRequestVersion;
@@ -138,8 +139,24 @@ function canLeaveMetadata(){return !metadataDirty||window.confirm('Thông tin ch
 async function openLightbox(id){
   if(lightbox.open&&!canLeaveMetadata())return;
   const version=++lightboxVersion;metadataDirty=false;lightboxPhoto=null;
-  if(!lightbox.open)lightbox.showModal();$('metadata-form').inert=true;$('lightbox-favorite').disabled=true;$('lightbox-create').disabled=true;$('lightbox-similar').disabled=true;
-  $('lightbox-name').textContent='Đang mở ảnh…';$('lightbox-image').removeAttribute('src');$('metadata-state').textContent='';
+  const card=document.querySelector(`.photo-card[data-photo="${id}"]`);
+  const thumbImg=card?.querySelector('.image-button img');
+  const doOpen=()=>{
+    if(!lightbox.open)lightbox.showModal();
+    $('metadata-form').inert=true;$('lightbox-favorite').disabled=true;$('lightbox-create').disabled=true;$('lightbox-similar').disabled=true;
+    $('lightbox-name').textContent='Đang mở ảnh…';$('lightbox-image').removeAttribute('src');$('metadata-state').textContent='';
+  };
+  if(!reduceMotion.matches && document.startViewTransition && thumbImg){
+    thumbImg.style.viewTransitionName='active-lightbox-view';
+    const transition=document.startViewTransition(()=>{
+      thumbImg.style.viewTransitionName='';
+      doOpen();
+      $('lightbox-image').style.viewTransitionName='active-lightbox-view';
+    });
+    transition.finished.finally(()=>{$('lightbox-image').style.viewTransitionName='';});
+  } else {
+    doOpen();
+  }
   try{
     const photo=await api(`/api/photos/${id}/metadata`);if(version!==lightboxVersion||!lightbox.open)return;
     lightboxPhoto=photo;const index=state.photos.findIndex(item=>item.id===id);
@@ -153,7 +170,23 @@ async function openLightbox(id){
     $('lightbox-prev').disabled=index<=0;$('lightbox-next').disabled=index<0||index>=state.photos.length-1;
   }catch(error){$('lightbox-name').textContent='Chưa mở được ảnh';toast(error.message,true);}
 }
-function closeLightbox(){if(canLeaveMetadata()){++lightboxVersion;lightbox.close();}}
+function closeLightbox(){
+  if(!canLeaveMetadata())return;
+  ++lightboxVersion;
+  const card=document.querySelector(`.photo-card[data-photo="${lightboxPhoto?.id}"]`);
+  const thumbImg=card?.querySelector('.image-button img');
+  if(!reduceMotion.matches && document.startViewTransition && thumbImg){
+    $('lightbox-image').style.viewTransitionName='active-lightbox-view';
+    const transition=document.startViewTransition(()=>{
+      $('lightbox-image').style.viewTransitionName='';
+      lightbox.close();
+      thumbImg.style.viewTransitionName='active-lightbox-view';
+    });
+    transition.finished.finally(()=>{thumbImg.style.viewTransitionName='';});
+  } else {
+    lightbox.close();
+  }
+}
 $('lightbox-close').onclick=closeLightbox;lightbox.addEventListener('cancel',event=>{event.preventDefault();closeLightbox();});
 function stepPhoto(step){const index=state.photos.findIndex(photo=>photo.id===lightboxPhoto?.id);const next=state.photos[index+step];if(next)openLightbox(next.id);}
 $('lightbox-prev').onclick=()=>stepPhoto(-1);$('lightbox-next').onclick=()=>stepPhoto(1);
@@ -251,4 +284,46 @@ function extractAmbientColors(url){
     }
   },{passive:true});
   document.addEventListener('pointerleave',()=>{if(activeCard){activeCard.style.transform='';activeCard=null;}});
+})();
+
+(()=>{
+  if(reduceMotion.matches) return;
+  if(!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  let activeBtn=null, raf=null, targetX=0, targetY=0;
+  document.addEventListener('pointermove', event => {
+    const btn = event.target.closest('.button, .icon-button, .dialog-close, .text-button');
+    if(!btn){
+      if(activeBtn){
+        activeBtn.style.transform = '';
+        activeBtn = null;
+      }
+      return;
+    }
+    const rect = btn.getBoundingClientRect();
+    const bx = rect.left + rect.width / 2;
+    const by = rect.top + rect.height / 2;
+    const dist = Math.hypot(event.clientX - bx, event.clientY - by);
+    if(dist < 50){
+      activeBtn = btn;
+      targetX = (event.clientX - bx) * 0.26;
+      targetY = (event.clientY - by) * 0.26;
+      if(!raf){
+        raf = requestAnimationFrame(() => {
+          if(activeBtn){
+            activeBtn.style.transform = `translate(${targetX.toFixed(1)}px, ${targetY.toFixed(1)}px)`;
+          }
+          raf = null;
+        });
+      }
+    } else if(activeBtn === btn){
+      activeBtn.style.transform = '';
+      activeBtn = null;
+    }
+  }, { passive: true });
+  document.addEventListener('pointerleave', () => {
+    if(activeBtn){
+      activeBtn.style.transform = '';
+      activeBtn = null;
+    }
+  });
 })();

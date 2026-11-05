@@ -1019,6 +1019,8 @@ main {
 }
 
 .photo-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 260px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   background: var(--surface-1);
@@ -1031,6 +1033,14 @@ main {
   transition: transform var(--dur-base) var(--ease-spring),
               box-shadow var(--dur-base) var(--ease-spring),
               border-color var(--dur-base);
+}
+
+#gallery .photo-card,
+#trash-gallery .photo-card,
+#search-results .photo-card,
+#output-history .photo-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 260px;
 }
 
 .photo-card::after {

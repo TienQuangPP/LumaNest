@@ -481,4 +481,26 @@
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
   }
+
+  /* Scroll-driven card entrance with IntersectionObserver fallback */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .photo-card {
+        animation: cardScrollReveal linear both;
+        animation-timeline: view();
+        animation-range: entry 5% cover 25%;
+      }
+
+      @keyframes cardScrollReveal {
+        from {
+          opacity: 0.2;
+          transform: perspective(800px) translateY(24px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: perspective(800px) translateY(0) scale(1);
+        }
+      }
+    }
+  }
 }

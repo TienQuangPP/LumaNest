@@ -79,3 +79,25 @@ if(localStorage.getItem('fsm-library-layout')!=='collections-v1'){
 }
 mountPhotoPicker($('studio-photo'));
 start().then(()=>Promise.all([refreshBatches(),refreshTrash()]));
+
+(()=>{
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const hero=document.querySelector('.collections-hero');
+  const cluster=document.getElementById('constellation-cluster');
+  if(!hero||!cluster) return;
+  let raf=null,rx=0,ry=0;
+  hero.addEventListener('pointermove',e=>{
+    const rect=hero.getBoundingClientRect();
+    const cx=(e.clientX-rect.left)/rect.width-0.5;
+    const cy=(e.clientY-rect.top)/rect.height-0.5;
+    rx=-cy*28;
+    ry=cx*28;
+    if(!raf){
+      raf=requestAnimationFrame(()=>{
+        cluster.style.transform=`rotateX(${rx}deg) rotateY(${ry}deg)`;
+        raf=null;
+      });
+    }
+  },{passive:true});
+  hero.addEventListener('pointerleave',()=>{cluster.style.transform='';});
+})();

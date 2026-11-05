@@ -1,4 +1,11 @@
 /* Give the image a definite box before fitting its intrinsic aspect ratio. */
+::view-transition-old(active-lightbox-view),
+::view-transition-new(active-lightbox-view) {
+  animation-duration: 0.34s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  mix-blend-mode: normal;
+}
+
 .lightbox {
   width: calc(100vw - 32px);
   max-width: 1560px;
