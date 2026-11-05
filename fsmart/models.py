@@ -178,6 +178,11 @@ class Models:
             return self.fast_style.render(image, style, strength, progress, profile)
 
     def custom(self, image: Image.Image, style: Image.Image, strength: float, steps: int, progress):
+        """Colour transfer then Gatys et al. style transfer: ReLU features, L-BFGS, coarse-to-fine (half size, then 512 px).
+
+        strength sets how much of the painting's palette is taken and the style weight (0.05 keeps the photo,
+        1 lets the painting dominate); steps is the L-BFGS iteration budget split 40/60 between the two scales.
+        """
         with self.style_lock:
             torch = self.torch()
             if self._vgg is None:
@@ -185,47 +190,77 @@ class Models:
                 state = torch.load(self.require(self.settings.weights_dir / 'style/vgg19-dcbb9e9d.pth'), map_location='cpu', weights_only=True)
                 network = vgg19(weights=None)
                 network.load_state_dict(state)
-                self._vgg = network.features[:29].to(self.device).eval().requires_grad_(False)
-            content = resized(image, 512)
-            reference = resized(style, 512)
+                self._vgg = network.features[:30].to(self.device).eval().requires_grad_(False)
+            side = 512
+            content = resized(image, side)
+            mix = min(1., max(.05, strength))
+            # Take the painting's palette first (mean and covariance of RGB), so each painting gives its own colours;
+            # the optimisation below then adds its brushwork and texture.
+            painted = _match_colours(np.asarray(content, np.float32) / 255, np.asarray(resized(style, 256), np.float32) / 255)
+            base = Image.fromarray((np.clip((1 - mix) * np.asarray(content, np.float32) / 255 + mix * painted, 0, 1) * 255).astype(np.uint8))
             def tensor(pil):
-                return torch.from_numpy(np.array(pil, copy=True)).permute(2, 0, 1).float().unsqueeze(0).to(self.device) / 255
+                return (torch.from_numpy(np.array(pil, copy=True)).permute(2, 0, 1).float().unsqueeze(0) / 255).contiguous().to(self.device)
             mean = torch.tensor([.485, .456, .406], device=self.device).view(1, 3, 1, 1)
             std = torch.tensor([.229, .224, .225], device=self.device).view(1, 3, 1, 1)
-            layers = {0, 5, 10, 19, 21, 28}
+            style_layers = (1, 6, 11, 20, 29)   # relu1_1 … relu5_1
+            content_layer = 22                  # relu4_2
             def features(x):
                 out = {}
                 x = (x - mean) / std
                 for index, layer in enumerate(self._vgg):
                     x = layer(x)
-                    if index in layers:
-                        out[index] = x.clone()
+                    if index in style_layers or index == content_layer:
+                        out[index] = x
                 return out
             def gram(x):
-                batch, channels, height, width = x.shape
-                x = x.reshape(batch, channels, -1)
-                return x @ x.transpose(1, 2) / (channels * height * width)
-            x = tensor(content)
-            with torch.no_grad():
-                content_features = features(x)[21]
-                style_features = {index: gram(value) for index, value in features(tensor(reference)).items() if index != 21}
-            output = x.clone().requires_grad_(True)
-            optimizer = torch.optim.Adam([output], lr=.02)
-            for step in range(steps):
-                optimizer.zero_grad()
-                current = features(output)
-                content_loss = torch.nn.functional.mse_loss(current[21], content_features)
-                style_loss = sum(torch.nn.functional.mse_loss(gram(current[index]), target) for index, target in style_features.items())
-                variation = (output[:, :, 1:] - output[:, :, :-1]).abs().mean() + (output[:, :, :, 1:] - output[:, :, :, :-1]).abs().mean()
-                (content_loss + 1e6 * style_loss + 1e-3 * variation).backward()
-                optimizer.step()
+                _, channels, height, width = x.shape
+                flat = x.reshape(channels, height * width)
+                return flat @ flat.t() / (height * width)
+            style_weight = 10 ** (3 + 3 * min(1., max(.05, strength)))   # 0.5 → 3e4, 0.8 → 2.5e5, 1 → 1e6
+            budget = max(20, steps)
+            stages = [(side // 2, max(8, budget * 2 // 5)), (side, max(12, budget - budget * 2 // 5))]
+            evaluations, total = [0], sum(iterations for _, iterations in stages) * 1.25
+            output = None
+            for scale, iterations in stages:
+                target = tensor(resized(base, scale))
+                with torch.no_grad():
+                    content_features = features(target)[content_layer]
+                    style_features = features(tensor(resized(style, max(scale, 384))))
+                    style_grams = {index: gram(style_features[index]) for index in style_layers}
+                output = target.clone() if output is None else torch.nn.functional.interpolate(output.detach(), size=target.shape[-2:], mode='bilinear', align_corners=False).contiguous()
+                output.requires_grad_(True)
+                optimizer = torch.optim.LBFGS([output], lr=1, max_iter=iterations, history_size=20, line_search_fn='strong_wolfe')
+                def closure():
+                    optimizer.zero_grad()
+                    current = features(output)
+                    content_loss = torch.nn.functional.mse_loss(current[content_layer], content_features)
+                    style_loss = sum(torch.nn.functional.mse_loss(gram(current[index]), style_grams[index]) for index in style_layers)
+                    smooth = (output[:, :, 1:] - output[:, :, :-1]).pow(2).mean() + (output[:, :, :, 1:] - output[:, :, :, :-1]).pow(2).mean()
+                    loss = content_loss + style_weight * style_loss + .3 * smooth
+                    loss.backward()
+                    evaluations[0] += 1
+                    if evaluations[0] % 10 == 0:
+                        progress(.1 + .85 * min(1., evaluations[0] / total), f'Đang vẽ theo tranh mẫu · bước {evaluations[0]} · 1 ảnh')
+                    return loss
+                optimizer.step(closure)
                 with torch.no_grad():
                     output.clamp_(0, 1)
-                if step % 10 == 0:
-                    progress(.1 + .85 * (step + 1) / steps, f'Bước tối ưu {step + 1}/{steps} · 1 ảnh')
             array = output.detach()[0].clamp(0, 1).permute(1, 2, 0).cpu().numpy()
-            return Image.blend(content, Image.fromarray((array * 255).astype(np.uint8)), strength)
+            return Image.fromarray((array * 255).astype(np.uint8)).resize(content.size)
 
     def status(self):
         directory = self.settings.weights_dir
         return {**self.fast_style.status(), 'face_model': self.settings.face_model, 'face_ready': all((directory / path).is_file() for path in ['facenet/data/pnet.pt', 'facenet/data/rnet.pt', 'facenet/data/onet.pt', 'adaface/model.safetensors' if self.settings.face_model == 'adaface' else 'facenet/vggface2.pt']), 'presets_ready': all((directory / f'style/{name}.pth').is_file() for name in ['candy', 'mosaic', 'rain_princess', 'udnie']), 'custom_ready': (directory / 'style/vgg19-dcbb9e9d.pth').is_file(), 'device': str(getattr(self, 'device', self.settings.device))}
+
+
+def _match_colours(content, style):
+    """Linear colour transfer: map content RGB mean/covariance onto the painting's (both float arrays in 0..1)."""
+    pixels, reference = content.reshape(-1, 3).astype(np.float64), style.reshape(-1, 3).astype(np.float64)
+    mean_c, mean_s = pixels.mean(0), reference.mean(0)
+    cov_c = np.cov(pixels, rowvar=False) + np.eye(3) * 1e-4
+    cov_s = np.cov(reference, rowvar=False) + np.eye(3) * 1e-4
+    def root(matrix, power):
+        values, vectors = np.linalg.eigh(matrix)
+        return vectors @ np.diag(np.clip(values, 1e-8, None) ** power) @ vectors.T
+    transform = root(cov_s, .5) @ root(cov_c, -.5)
+    return np.clip((pixels - mean_c) @ transform.T + mean_s, 0, 1).reshape(content.shape).astype(np.float32)

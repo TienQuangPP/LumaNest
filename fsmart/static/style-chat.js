@@ -8,6 +8,7 @@ function clearStyleRecipe() {
 function applyStyleRecipe(plan) {
   state.activeRecipe = plan;
   state.style = ['reference','artwork'].includes(plan.engine) ? 'custom' : plan.preset;
+  state.libraryStyle = null;
   $('strength').value = plan.strength;
   $('strength-value').textContent = `${Math.round(plan.strength*100)}%`;
   $('style-steps').value = plan.steps;

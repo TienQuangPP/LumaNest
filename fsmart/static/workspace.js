@@ -97,7 +97,8 @@ $('run-style').onclick=()=>busy($('run-style'),'Đang sáng tạo…',async()=>{
   state.styleGenerating=true;
   try{
     const form=new FormData();form.append('photo_id',photo.id);form.append('style_id',state.style);form.append('strength',$('strength').value);form.append('steps',$('style-steps').value);form.append('profile',$('speed-profile').value);
-    if(state.style==='custom'){if(!$('style-file').files[0])throw new Error('Chọn một ảnh phong cách.');form.append('style_image',$('style-file').files[0]);}
+    if(state.style==='custom'&&state.libraryStyle)form.append('library_key',state.libraryStyle);
+    else if(state.style==='custom'){if(!$('style-file').files[0])throw new Error('Chọn một ảnh phong cách hoặc một tranh trong Thư viện tranh.');form.append('style_image',$('style-file').files[0]);}
     const job=await api('/api/stylize',{method:'POST',body:form,headers:{'Idempotency-Key':crypto.randomUUID()}});
     const done=await watchJob(job.job_id);if(state.selected?.id===photo.id)showOutput(done.result.image_url,done.result.download_url);
     await refreshOutputs();await refreshHealth();toast(`Đã tạo ảnh trong ${done.result.seconds} giây${done.result.cached?' · dùng lại kết quả đã lưu':''}.`);

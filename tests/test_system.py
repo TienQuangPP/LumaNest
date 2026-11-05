@@ -269,3 +269,9 @@ def test_concurrent_resume_keeps_four_batch_limit(client):
         results=list(pool.map(resume,jobs[2:]))
     assert sum(results)==1
     assert client.app.state.store.one("SELECT count(*) n FROM jobs WHERE kind='bulk-style' AND status IN ('queued','running')")['n']==4
+
+
+def test_page_revalidates_so_updates_show_without_a_hard_refresh(client):
+    page = client.get('/')
+    assert page.status_code == 200 and page.headers['cache-control'] == 'no-cache'
+    assert client.get('/api/health').headers['cache-control'] == 'no-store'

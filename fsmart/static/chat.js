@@ -28,13 +28,15 @@
     chat.status = status;
     const gpt = status.provider === 'openai';
     const localModel = status.provider === 'local-model';
-    const gemini=status.provider==='gemini',selection=status.selection||(gpt?'openai':gemini?'gemini':'qwen');
+    const gemini=status.provider==='gemini',custom=status.provider==='compatible',selection=status.selection||(gpt?'openai':gemini?'gemini':'qwen');
     if(selection==='openai'&&!$('chat-source').querySelector('[value="openai"]')){const option=el('option','','OpenAI · đã cấu hình');option.value='openai';$('chat-source').append(option);}
     $('chat-source').value=selection;
-    $('chat-provider').textContent = gpt ? `GPT · ${status.model}` : gemini ? `${status.model}${status.configured?'':' · cần key'}` : localModel ? status.model : 'Hướng dẫn có sẵn';
-    $('chat-privacy').textContent = gpt
-      ? 'Văn bản chat được gửi tới OpenAI. Ảnh không được gửi.'
-      : gemini ? 'Gemini nhận văn bản chat qua Google · ảnh nguồn không được gửi.' : localModel ? 'Qwen chạy trên máy · không gửi hội thoại hay ảnh ra ngoài.' : 'Hướng dẫn có sẵn · không gửi dữ liệu ra ngoài.';
+    $('chat-provider').textContent = custom ? (status.configured ? `${status.compatible_label} · ${status.model}` : 'API tùy chỉnh · cần kết nối') : gpt ? `GPT · ${status.model}` : gemini ? `${status.model}${status.configured?'':' · cần key'}` : localModel ? status.model : 'Hướng dẫn có sẵn';
+    $('chat-privacy').textContent = custom
+      ? `Văn bản chat gửi tới ${status.compatible_label||'API tùy chỉnh'}. Ảnh chỉ được gửi khi bạn bấm Gửi ảnh để vẽ.`
+      : gpt
+      ? 'Văn bản chat được gửi tới OpenAI. Ảnh chỉ được gửi khi bạn bấm Gửi ảnh cho OpenAI vẽ.'
+      : gemini ? 'Gemini nhận văn bản chat. Ảnh chỉ được gửi khi bạn bấm Gửi ảnh cho Gemini vẽ.' : localModel ? 'Qwen chạy trên máy · không gửi hội thoại hay ảnh ra ngoài.' : 'Hướng dẫn có sẵn · không gửi dữ liệu ra ngoài.';
     $('chat-config-status').textContent = gpt
       ? `Đã cấu hình ${status.model}${status.key_source === 'environment' ? ' từ biến môi trường' : ' cho phiên chạy này'}. Key sẽ được kiểm tra khi gửi câu hỏi.`
       : localModel ? 'Chatbot Qwen sẵn sàng. Lượt đầu cần nạp model; có thể mất vài chục giây.' : 'Chưa bật GPT. Bạn vẫn dùng được phần hướng dẫn có sẵn.';
@@ -45,6 +47,16 @@
     $('gemini-clear-key').disabled=chat.pending||!status.gemini_configured;
     $('gemini-config-status').textContent=status.gemini_verified?'Đã kết nối model chat Gemini. Hạn mức tạo ảnh được kiểm tra riêng khi tạo.':status.gemini_configured?'Đã lưu key trong RAM. Bấm Lưu và kiểm tra để thử kết nối.':'Nhập key rồi bấm Lưu và kiểm tra. Qwen dùng được ngay trên máy.';
     $('gemini-config-status').classList.remove('config-error');
+    if(status.compatible_configured){
+      $('compatible-base').value=status.compatible_base_url;$('compatible-label').value=status.compatible_label;
+      $('compatible-model').value=status.compatible_model;$('compatible-image-model').value=status.compatible_image_model||'';$('compatible-image-mode').value=status.compatible_image_mode||'auto';
+      const preset=[...$('compatible-preset').options].find(option=>option.value&&option.value===status.compatible_base_url);$('compatible-preset').value=preset?preset.value:'';
+    }
+    $('compatible-clear').disabled=chat.pending||!status.compatible_configured;
+    $('compatible-status').textContent=!status.compatible_configured?'Chọn nhà cung cấp, nhập Base URL, key và model rồi bấm Lưu và dùng.'
+      :status.compatible_verified?`Đã kết nối ${status.compatible_label} · ${status.compatible_model}. Key giữ trong RAM đến khi tắt app.`
+      :(status.compatible_note||`Đã lưu ${status.compatible_label}. Key sẽ được kiểm tra khi gửi câu hỏi đầu tiên.`);
+    $('compatible-status').classList.toggle('config-error',status.compatible_configured&&!status.compatible_verified);
   }
 
   async function refreshStatus() {
@@ -80,7 +92,8 @@
     $('chat-save-key').disabled = value;
     $('chat-clear-key').disabled = value || !chat.status?.image_configured;
     $('chat-source').disabled=value;$('gemini-save-key').disabled=value;$('gemini-clear-key').disabled=value||!chat.status?.gemini_configured;
-    for(const id of ['gemini-key','gemini-model','gemini-image-model','chat-settings-done'])$(id).disabled=value;
+    for(const id of ['gemini-key','gemini-model','gemini-image-model','chat-settings-done','compatible-preset','compatible-base','compatible-label','compatible-key','compatible-model','compatible-image-model','compatible-image-mode','compatible-fetch','compatible-save'])$(id).disabled=value;
+    $('compatible-clear').disabled=value||!chat.status?.compatible_configured;
     $('gemini-key-form').setAttribute('aria-busy',String(value));
     $('chat-form').setAttribute('aria-busy', String(value));
     $('chat-suggestions').querySelectorAll('button').forEach(button => button.disabled = value);
@@ -102,16 +115,20 @@
     $('chat-settings').classList.remove('hidden');
     $('chat-panel').classList.add('settings-open');
     $('chat-settings-toggle').setAttribute('aria-expanded', 'true');
-    if(chat.status?.selection==='openai'){$('openai-settings').open=true;$('chat-key').focus();}else $('gemini-key').focus();
+    if(chat.status?.selection==='compatible'){$('compatible-settings').open=true;$('compatible-base').focus();}else if(chat.status?.selection==='openai'){$('openai-settings').open=true;$('chat-key').focus();}else $('gemini-key').focus();
   }
 
   function attachStylePlan(row, plan) {
     const card = el('div', 'chat-style-plan');
     card.append(el('small', 'chat-plan-eyebrow', 'ĐỀ XUẤT PHONG CÁCH'), el('strong', '', plan.title));
     const preset = state.styles.find(style => style.id === plan.preset)?.name || plan.preset;
-    const route = plan.engine === 'reference' ? `${plan.api_provider==='gemini'?'Gemini':'OpenAI'} tạo ảnh tham chiếu → VGG19 · ${plan.steps} bước` : plan.engine==='artwork' ? `Tranh có sẵn → VGG19 · ${plan.steps} bước · trên máy` : `${preset} · chạy NST trên máy`;
+    const providerName=plan.api_provider==='gemini'?'Gemini':plan.api_provider==='compatible'?(chat.status?.compatible_label||'API tùy chỉnh'):'OpenAI';
+    const redraw = plan.direct && plan.image_mode==='redraw';
+    const route = redraw ? `${plan.api_label||providerName} xem ảnh rồi vẽ lại toàn bộ cảnh bằng ${plan.image_model} · không dùng model trên máy` : plan.direct ? `${plan.api_label||providerName} vẽ lại ảnh bằng ${plan.image_model||'model ảnh'} · không dùng model trên máy` : plan.engine === 'reference' ? `${providerName} tạo ảnh tham chiếu → VGG19 · ${plan.steps} bước` : plan.engine==='artwork' ? `Tranh có sẵn → VGG19 · ${plan.steps} bước · trên máy` : `${preset} · chạy NST trên máy`;
     card.append(el('p', '', `${route}\nĐộ đậm ${Math.round(plan.strength*100)}%`));
-    if (plan.engine === 'reference') card.append(el('p', 'chat-plan-cost', 'Dùng hạn mức API ảnh khi bấm tạo. Chỉ gửi mô tả; ảnh gốc ở trên máy.'));
+    if (redraw) card.append(el('p', 'chat-plan-cost', `Khi bấm tạo, ảnh (tối đa 1024 px) được gửi tới ${plan.api_label||providerName} để model chat mô tả cảnh, rồi ${plan.image_model} vẽ lại từ mô tả. Người và khuôn mặt trong ảnh mới sẽ khác ảnh gốc. Tốn phí 1 ảnh API.`));
+    else if (plan.direct) card.append(el('p', 'chat-plan-cost', `Khi bấm tạo, ảnh bạn chọn (thu nhỏ tối đa 1536 px) được gửi tới ${plan.api_label||providerName} để vẽ lại. Có thể tốn phí API ảnh.`));
+    else if (plan.engine === 'reference') card.append(el('p', 'chat-plan-cost', 'Dùng hạn mức API ảnh khi bấm tạo. Chỉ gửi mô tả; ảnh gốc ở trên máy.'));
     if(plan.engine==='artwork'){const image=el('img','chat-reference');image.src=plan.reference_image_url;image.alt='Tranh tham chiếu Van Gogh';card.append(image);const source=el('a','text-button','Tranh public domain · The Met ↗');source.href=plan.source_url;source.target='_blank';source.rel='noopener noreferrer';card.append(source);}
     const label = el('label', '', 'Ảnh để tạo tác phẩm');
     const select = el('select', 'chat-plan-photo');
@@ -127,21 +144,21 @@
       select.append(option);
     }
     select.value = state.selected?.id || '';
-    const imageKeyReady=()=>plan.api_provider==='gemini'?!!chat.status?.gemini_configured:!!chat.status?.image_configured;
-    const button = el('button', 'button primary chat-plan-create', plan.requires_api_key && !imageKeyReady() ? `Kết nối ${plan.api_provider==='gemini'?'Gemini':'API ảnh'} để tạo mới` : 'Tạo ảnh theo mô tả');
+    const imageKeyReady=()=>plan.api_provider==='gemini'?!!chat.status?.gemini_configured:plan.api_provider==='compatible'?!!(chat.status?.compatible_configured&&chat.status?.compatible_image_model):!!chat.status?.image_configured;
+    const button = el('button', 'button primary chat-plan-create', plan.requires_api_key && !imageKeyReady() ? (plan.api_provider==='compatible'?'Chọn model tạo ảnh để tạo mới':`Kết nối ${plan.api_provider==='gemini'?'Gemini':'API ảnh'} để tạo mới`) : plan.direct ? `Gửi ảnh cho ${plan.api_label||providerName} vẽ` : 'Tạo ảnh theo mô tả');
     button.type = 'button';
     const status = el('p', 'chat-plan-status');
     status.setAttribute('role', 'status');
     button.onclick = async () => {
       if (chat.pending) return;
-      if (plan.requires_api_key && !imageKeyReady()) { openSettings();if(plan.api_provider!=='gemini'){$('openai-settings').open=true;$('chat-key').focus();}return; }
+      if (plan.requires_api_key && !imageKeyReady()) { openSettings();if(plan.api_provider==='compatible'){$('compatible-settings').open=true;$('compatible-image-model').focus();}else if(plan.api_provider!=='gemini'){$('openai-settings').open=true;$('chat-key').focus();}return; }
       const photo = findPhotoById(select.value);
       if (!photo) { status.textContent = 'Chọn một ảnh trong danh sách trước. Nếu chưa có ảnh, thêm ảnh vào Thư viện.'; return; }
       setPending(true);
-      status.textContent = plan.engine === 'reference' ? 'Đang tạo ảnh phong cách rồi chuyển style. Có thể mất vài phút.' : 'Đang tạo tác phẩm bằng model NST…';
+      status.textContent = redraw ? `${plan.api_label||providerName} đang xem ảnh rồi vẽ lại bằng ${plan.image_model}, thường 20–90 giây…` : plan.direct ? `Đang gửi ảnh tới ${plan.api_label||providerName} · ${plan.image_model}. Model API đang vẽ lại, thường 10–60 giây…` : plan.engine === 'reference' ? 'Đang tạo ảnh phong cách rồi chuyển style. Có thể mất vài phút.' : 'Đang tạo tác phẩm bằng model NST…';
       try {
         const result = await createFromStyleRecipe(plan, photo);
-        status.textContent = 'Đã tạo xong. Xem trước/sau trong Phòng sáng tạo.';
+        status.textContent = plan.direct ? `${plan.api_label||providerName} đã vẽ xong${result.seconds?` sau ${Math.round(result.seconds)} giây`:''}. Xem trước/sau trong Phòng sáng tạo.` : 'Đã tạo xong. Xem trước/sau trong Phòng sáng tạo.';
         const preview = el('img', 'chat-plan-output');
         preview.alt = plan.title;
         preview.src = result.image_url;
@@ -168,7 +185,7 @@
     $('chat-panel').classList.toggle('hidden', !open);
     document.body.classList.toggle('chat-open', open);
     $('chat-launcher').setAttribute('aria-expanded', String(open));
-    if (!open) { $('chat-key').value = '';$('gemini-key').value=''; $('chat-launcher').focus(); return; }
+    if (!open) { $('chat-key').value = '';$('gemini-key').value='';$('compatible-key').value=''; $('chat-launcher').focus(); return; }
     $('chat-input').focus();
     scrollChat();
     try { await refreshStatus(); }
@@ -190,8 +207,8 @@
     $('chat-settings').classList.toggle('hidden', !open);
     $('chat-panel').classList.toggle('settings-open', open);
     $('chat-settings-toggle').setAttribute('aria-expanded', String(open));
-    if (open) {if(chat.status?.selection==='openai'){$('openai-settings').open=true;$('chat-key').focus();}else $('gemini-key').focus();}
-    else { $('chat-key').value = '';$('gemini-key').value='';}
+    if (open) {if(chat.status?.selection==='compatible'){$('compatible-settings').open=true;$('compatible-base').focus();}else if(chat.status?.selection==='openai'){$('openai-settings').open=true;$('chat-key').focus();}else $('gemini-key').focus();}
+    else { $('chat-key').value = '';$('gemini-key').value='';$('compatible-key').value='';}
   };
   $('chat-new').onclick = resetChat;
   $('chat-mode-support').onclick = () => setMode('support');
@@ -209,6 +226,7 @@
     event.preventDefault();
     const text = $('chat-input').value.trim();
     if (!text || chat.pending) return;
+    if(chat.status?.selection==='compatible'&&!chat.status.configured){openSettings();$('compatible-settings').open=true;$('compatible-base').focus();return;}
     if(chat.status?.selection==='gemini'&&!chat.status.configured){openSettings();$('gemini-config-status').textContent='Nhập Gemini API key trước khi gửi, hoặc chọn Qwen trên máy.';return;}
     if (/sk-[A-Za-z0-9_-]{16,}|AIza[A-Za-z0-9_-]{20,}|AQ\.[A-Za-z0-9._~+/=-]{16,}/.test(text)) {
       message('assistant', 'Bạn vừa nhập nội dung giống API key. Hãy dùng Cài đặt trợ lý, không gửi key trong hội thoại. Tin nhắn này chưa được gửi.', 'Bảo vệ API key', 'error');
@@ -227,7 +245,7 @@
       pending.remove();
       const styleMode = result.mode === 'style' || chat.mode === 'style';
       if (styleMode) chat.lastStylePrompt = text;
-      const row = message('assistant', result.reply, result.provider === 'openai' ? `GPT · ${result.model}` : result.provider==='gemini'?`Gemini · ${result.model}` : result.provider === 'local-model' ? `${result.model} · trên máy${result.seconds ? ' · '+result.seconds+'s' : ''}` : result.style_plan?.engine==='artwork'?'Tranh tham chiếu có sẵn' : styleMode ? 'Gợi ý có sẵn' : 'Hướng dẫn có sẵn');
+      const row = message('assistant', result.reply, result.provider==='compatible' ? `${result.label||chat.status?.compatible_label||'API'} · ${result.model}` : result.provider === 'openai' ? `GPT · ${result.model}` : result.provider==='gemini'?`Gemini · ${result.model}` : result.provider === 'local-model' ? `${result.model} · trên máy${result.seconds ? ' · '+result.seconds+'s' : ''}` : result.style_plan?.engine==='artwork'?'Tranh tham chiếu có sẵn' : styleMode ? 'Gợi ý có sẵn' : 'Hướng dẫn có sẵn');
       if (result.style_plan) attachStylePlan(row, result.style_plan);
       const summary = result.style_plan ? `\nĐề xuất: ${result.style_plan.title}; engine=${result.style_plan.engine}; preset=${result.style_plan.preset}; strength=${result.style_plan.strength}; steps=${result.style_plan.steps}.` : '';
       chat.history.push({role: 'user', content: text}, {role: 'assistant', content: result.reply + summary});
@@ -286,7 +304,7 @@
     try{result=await api('/api/chat/provider',jsonRequest({provider:source}));}
     catch(error){$('chat-source').value=chat.status?.selection||'qwen';message('assistant',error.message,'Chưa đổi được','error');}
     finally{setPending(false);}
-    if(result){resetChat();renderStatus(result);$('chat-key').value='';$('gemini-key').value='';if(source==='gemini'&&!result.configured)openSettings();else{$('chat-settings').classList.add('hidden');$('chat-panel').classList.remove('settings-open');$('chat-settings-toggle').setAttribute('aria-expanded','false');}}
+    if(result){resetChat();renderStatus(result);$('chat-key').value='';$('gemini-key').value='';if(source==='compatible'&&!result.configured){openSettings();$('compatible-settings').open=true;$('compatible-base').focus();}else if(source==='gemini'&&!result.configured)openSettings();else{$('chat-settings').classList.add('hidden');$('chat-panel').classList.remove('settings-open');$('chat-settings-toggle').setAttribute('aria-expanded','false');}}
   };
   $('gemini-key-form').onsubmit=async event=>{
     event.preventDefault();if(chat.pending)return;
@@ -307,5 +325,49 @@
   $('gemini-key').addEventListener('input',()=>{if(chat.pending)return;$('gemini-config-status').classList.remove('config-error');$('gemini-config-status').textContent='Bấm Lưu và kiểm tra, hoặc nhấn Enter để kết nối Gemini.';});
   $('chat-settings-done').onclick=()=>{if(chat.pending)return;$('gemini-key').value='';$('chat-key').value='';$('chat-settings').classList.add('hidden');$('chat-panel').classList.remove('settings-open');$('chat-settings-toggle').setAttribute('aria-expanded','false');$('chat-input').focus();};
   $('gemini-clear-key').onclick=async()=>{if(chat.pending)return;setPending(true);let result;try{result=await api('/api/chat/gemini/config',{method:'DELETE'});}catch(error){$('gemini-config-status').textContent=error.message;}finally{setPending(false);}if(result){resetChat();renderStatus(result);$('gemini-key').value='';}};
+  const compatibleReport=(text,error=true)=>{$('compatible-status').textContent=text;$('compatible-status').classList.toggle('config-error',error);};
+  $('compatible-preset').onchange=()=>{
+    const option=$('compatible-preset').selectedOptions[0];
+    $('compatible-base').value=option.value;$('compatible-label').value=option.dataset.label;$('compatible-models').replaceChildren();
+    if(!option.value){$('compatible-base').focus();compatibleReport('Mở trang tài liệu của nhà cung cấp (VietAPI…) và dán Base URL, thường kết thúc bằng /v1.',false);}
+    else $('compatible-key').focus();
+  };
+  $('compatible-fetch').onclick=async()=>{
+    if(chat.pending)return;const base=$('compatible-base').value.trim(),key=normalizeGeminiKey($('compatible-key').value);
+    if(!base){compatibleReport('Nhập Base URL trước.');$('compatible-base').focus();return;}
+    if(!key&&base!==chat.status?.compatible_base_url){compatibleReport('Nhập API key để lấy danh sách model.');$('compatible-key').focus();return;}
+    setPending(true);compatibleReport('Đang lấy danh sách model…',false);
+    try{
+      const result=await api('/api/chat/compatible/models',jsonRequest({base_url:base,...(key?{api_key:key}:{})}));
+      const imagePattern=/image|dall-?e|imagen|flux|banana|stable-?diffusion|sdxl|midjourney|seedream|recraft|ideogram/i;
+      const option=id=>{const node=el('option');node.value=id;return node;};
+      const imageModels=result.models.filter(id=>imagePattern.test(id));
+      $('compatible-models').replaceChildren(...result.models.filter(id=>!imagePattern.test(id)&&!/^tts-/.test(id)).map(option));
+      $('compatible-image-models').replaceChildren(...imageModels.map(option));
+      if(imageModels.length&&!imagePattern.test($('compatible-image-model').value))$('compatible-image-model').value=imageModels[0];
+      compatibleReport(result.models.length?`Có ${result.models.length} model${imageModels.length?`, trong đó ${imageModels.length} model vẽ ảnh (${imageModels.join(', ')})`:''}. Bấm vào ô Model chat để chọn hoặc gõ để lọc.`:'Nhà cung cấp không liệt kê model nào. Nhập tên model bằng tay.',!result.models.length);
+      if(result.models.length)$('compatible-model').focus();
+    }catch(error){compatibleReport(error.message);}
+    finally{setPending(false);}
+  };
+  $('compatible-form').onsubmit=async event=>{
+    event.preventDefault();if(chat.pending)return;
+    const base=$('compatible-base').value.trim(),key=normalizeGeminiKey($('compatible-key').value),model=$('compatible-model').value.trim(),imageModel=$('compatible-image-model').value.trim(),label=$('compatible-label').value.trim()||'API tùy chỉnh';
+    if(!base){compatibleReport('Nhập Base URL của nhà cung cấp.');$('compatible-base').focus();return;}
+    if(!key&&base!==chat.status?.compatible_base_url){compatibleReport('Nhập API key.');$('compatible-key').focus();return;}
+    if(!model){compatibleReport('Nhập hoặc chọn model chat.');$('compatible-model').focus();return;}
+    setPending(true);$('compatible-save').textContent='Đang kiểm tra…';compatibleReport('Đang kiểm tra kết nối (chỉ đọc danh sách model, không tốn credit)…',false);
+    let result;
+    try{result=await api('/api/chat/compatible/config',jsonRequest({base_url:base,model,image_model:imageModel,label,image_mode:$('compatible-image-mode').value,...(key?{api_key:key}:{})}));}
+    catch(error){compatibleReport(error.message);}
+    finally{$('compatible-key').value='';setPending(false);$('compatible-save').textContent='Lưu và dùng';}
+    if(result){resetChat();renderStatus(result);message('assistant',`Đã chuyển sang ${result.compatible_label} · ${result.compatible_model}. Văn bản chat sẽ gửi tới nhà cung cấp này.`,result.compatible_label);}
+  };
+  $('compatible-clear').onclick=async()=>{
+    if(chat.pending)return;setPending(true);let result;
+    try{result=await api('/api/chat/compatible/config',{method:'DELETE'});}catch(error){compatibleReport(error.message);}
+    finally{setPending(false);}
+    if(result){resetChat();renderStatus(result);$('compatible-key').value='';$('compatible-model').value='';$('compatible-image-model').value='';$('compatible-models').replaceChildren();}
+  };
   resetChat();
 })();

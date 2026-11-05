@@ -119,7 +119,7 @@ def test_novel_style_without_key_is_not_silently_replaced_with_a_preset(tmp_path
         assert unsupported['style_plan'] is None
 
 
-def test_structured_plan_and_generated_reference_pipeline_send_text_only(tmp_path):
+def test_openai_plan_is_painted_by_the_openai_image_model_itself(tmp_path):
     calls = []
 
     def post(url, **kwargs):
@@ -130,43 +130,45 @@ def test_structured_plan_and_generated_reference_pipeline_send_text_only(tmp_pat
             assert schema['schema']['additionalProperties'] is False
             assert set(schema['schema']['required']) == set(REFERENCE)
             return structured(REFERENCE)
-        assert url == IMAGES_URL
-        body = kwargs['json']
-        assert set(body) == {'model', 'n', 'size', 'quality', 'output_format', 'prompt'}
-        assert body['model'] == 'gpt-image-1.5' and body['n'] == 1 and body['quality'] == 'low'
-        assert kwargs['allow_redirects'] is False
-        assert 'private-photo' not in json.dumps(body) and 'private album' not in json.dumps(body)
-        assert KEY not in json.dumps(body)
+        # The user chose GPT, so GPT's image model repaints the photo: multipart /images/edits, no local NST.
+        assert url == 'https://api.openai.com/v1/images/edits' and kwargs['allow_redirects'] is False
+        assert kwargs['data']['model'] == 'gpt-image-1.5' and 'Repaint this exact photo' in kwargs['data']['prompt']
+        name, data, mime = kwargs['files']['image']
+        assert mime == 'image/png' and Image.open(io.BytesIO(data)).size[0] <= 1536
+        assert 'Content-Type' not in kwargs['headers'] and kwargs['headers']['Authorization'] == f'Bearer {KEY}'
+        assert KEY not in json.dumps(kwargs['data'])
         return response({'data': [{'b64_json': base64.b64encode(png('blue')).decode()}]})
 
     with client_for(tmp_path, ChatService(api_key=KEY, post=post)) as client:
         photo = upload(client)
         plan = client.post('/api/chat', json={'mode': 'style', 'message': 'Màu nước xanh nhạt'}).json()['style_plan']
-        assert len(calls) == 1  # proposing does not spend an image generation
+        assert len(calls) == 1 and plan['direct'] and plan['api_label'] == 'OpenAI'  # proposing spends no image call
         job_id = client.post('/api/stylize/from-chat', json={'photo_id': photo, 'plan_id': plan['id']}).json()['job_id']
         job = wait_job(client, job_id)
-        assert job['status'] == 'done' and len(calls) == 2
-        assert client.app.state.models.calls == [('custom', (0, 0, 255), .6, 50)]
+        assert job['status'] == 'done' and len(calls) == 2 and job['result']['profile'] == 'api'
+        assert client.app.state.models.calls == []  # no local style model touched the photo
         image = Image.open(io.BytesIO(client.get(job['result']['image_url']).content))
         assert image.getpixel((0, 0)) == (0, 0, 255)
         assert client.get('/api/outputs').json()[0]['title'] == REFERENCE['title']
-        assert list((tmp_path/'runtime/styles').iterdir()) == []  # temporary reference is cleaned
+        assert list((tmp_path/'runtime/styles').iterdir()) == []
 
 
-def test_missing_vgg_is_rejected_before_image_api_spend(tmp_path):
+def test_api_plans_never_need_local_style_weights(tmp_path):
     calls = []
 
     def post(url, **kwargs):
         calls.append(url)
-        assert url == RESPONSES_URL
-        return structured(REFERENCE)
+        if url == RESPONSES_URL:
+            return structured(REFERENCE)
+        return response({'data': [{'b64_json': base64.b64encode(png('red')).decode()}]})
 
     with client_for(tmp_path, ChatService(api_key=KEY, post=post)) as client:
         photo = upload(client)
         client.app.state.models.custom_ready = False
         plan = client.post('/api/chat', json={'mode': 'style', 'message': 'Màu nước xanh'}).json()['style_plan']
-        assert client.post('/api/stylize/from-chat', json={'photo_id': photo, 'plan_id': plan['id']}).status_code == 503
-        assert calls == [RESPONSES_URL] and not client.app.state.models.calls
+        job = client.post('/api/stylize/from-chat', json={'photo_id': photo, 'plan_id': plan['id']})
+        assert job.status_code == 202 and wait_job(client, job.json()['job_id'])['status'] == 'done'
+        assert calls == [RESPONSES_URL, 'https://api.openai.com/v1/images/edits'] and not client.app.state.models.calls
 
 
 @pytest.mark.parametrize('change', [{'strength': 2}, {'preset': 'shell_command'}, {'extra_url': 'https://untrusted.example'}, {'reference_prompt': ''}])
@@ -186,7 +188,7 @@ def test_image_provider_error_releases_plan_for_explicit_retry(tmp_path):
             return structured(REFERENCE)
         attempts.append(url)
         if len(attempts) == 1:
-            return response({'error': KEY}, 429)
+            return response({'error': {'message': f'insufficient_quota for {KEY}', 'type': 'insufficient_quota'}}, 429)  # not retried
         return response({'data': [{'b64_json': base64.b64encode(png('blue')).decode()}]})
 
     with client_for(tmp_path, ChatService(api_key=KEY, post=post)) as client:
@@ -195,7 +197,7 @@ def test_image_provider_error_releases_plan_for_explicit_retry(tmp_path):
         payload = {'photo_id': photo, 'plan_id': plan['id']}
         first_id = client.post('/api/stylize/from-chat', json=payload).json()['job_id']
         failed = wait_job(client, first_id)
-        assert failed['status'] == 'error' and KEY not in json.dumps(failed)
+        assert failed['status'] == 'error' and KEY not in json.dumps(failed) and 'insufficient_quota' in failed['message']
         second_id = client.post('/api/stylize/from-chat', json=payload).json()['job_id']
         assert second_id != first_id and wait_job(client, second_id)['status'] == 'done'
         assert len(attempts) == 2

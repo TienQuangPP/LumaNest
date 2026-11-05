@@ -101,12 +101,18 @@ def test_google_schema_is_validated_and_image_job_stays_with_google(tmp_path):
         photo=upload(client)
         plan=client.post('/api/chat',json={'message':'Màu nước pastel','mode':'style','provider':'gemini'}).json()
         assert plan['provider']=='gemini' and plan['style_plan']['api_provider']=='gemini'
+        assert plan['style_plan']['direct'] and plan['style_plan']['image_model']=='gemini-3.1-flash-lite-image'
         assert calls[0][1]['json']['generationConfig']['responseJsonSchema']['additionalProperties'] is False
-        s.select_provider(ChatProviderInput(provider='qwen'))
+        assert 'MODEL API' in calls[0][1]['json']['systemInstruction']['parts'][0]['text']
+        s.select_provider(ChatProviderInput(provider='qwen'))  # the plan keeps the provider it was made with
         job=client.post('/api/stylize/from-chat',json={'photo_id':photo,'plan_id':plan['style_plan']['id']})
-        assert job.status_code==202 and wait_job(client,job.json()['job_id'])['status']=='done'
+        done=wait_job(client,job.json()['job_id'])
+        assert job.status_code==202 and done['status']=='done' and done['result']['profile']=='api' and done['result']['provider']=='Gemini'
+        # Google's image model receives the photo itself and repaints it; no local VGG19 or style reference file.
         assert len(calls)==2 and 'gemini-3.1-flash-lite-image:generateContent' in calls[1][0]
-        assert photo not in json.dumps(calls) and 'inlineData' not in json.dumps(calls[1][1]['json'])
+        parts=calls[1][1]['json']['contents'][0]['parts']
+        assert parts[0]['inlineData']['mimeType']=='image/jpeg' and 'Repaint this exact photo' in parts[1]['text']
+        assert photo not in json.dumps(calls) and KEY not in json.dumps([c[1]['json'] for c in calls])
         assert not list((tmp_path/'runtime/styles').iterdir())
 
 def test_invalid_google_recipe_rejected_and_no_key_written_to_disk(tmp_path):
@@ -146,3 +152,55 @@ def test_curated_reference_preserved_and_recipe_recorded(tmp_path,monkeypatch):
         follow=c.post('/api/chat',json={'message':'nhạt hơn','mode':'style','history':[{'role':'user','content':'vangot'}]}).json()
         assert follow['style_plan']['engine']=='artwork' and follow['style_plan']['strength']==.5
     with pytest.raises(ValueError):StyleRecipe(engine='artwork',preset='candy',strength=.6,steps=50,title='Bad',reply='Bad',reference_prompt='../../outside')
+
+
+def test_transient_gemini_errors_are_retried(monkeypatch):
+    import fsmart.gemini as gemini
+    monkeypatch.setattr(gemini,'RETRY_DELAYS',(0,0))
+    replies=[response(status=503),response(status=500),response('Xin chào')]
+    calls=[]
+    def post(*a,**k):calls.append(a[0]);return replies.pop(0)
+    assert gemini.generate(post,KEY,'gemini-3.8-flash','sys','hi',[])=='Xin chào' and len(calls)==3
+
+
+@pytest.mark.parametrize('status,needle',[(503,'quá tải (mã 503)'),(504,'mã 504')])
+def test_persistent_gemini_overload_names_the_status(monkeypatch,status,needle):
+    import fsmart.gemini as gemini
+    monkeypatch.setattr(gemini,'RETRY_DELAYS',(0,0))
+    calls=[]
+    def post(*a,**k):calls.append(1);return response(status=status)
+    with pytest.raises(ChatUnavailable) as caught:gemini.generate(post,KEY,'gemini-3.8-flash','sys','hi',[])
+    assert needle in str(caught.value) and caught.value.status_code==502 and len(calls)==3 and KEY not in str(caught.value)
+
+
+def test_client_errors_are_not_retried(monkeypatch):
+    import fsmart.gemini as gemini
+    monkeypatch.setattr(gemini,'RETRY_DELAYS',(0,0))
+    calls=[]
+    def post(*a,**k):calls.append(1);return response(status=400)
+    with pytest.raises(ChatUnavailable):gemini.generate(post,KEY,'gemini-3.8-flash','sys','hi',[])
+    assert len(calls)==1
+
+
+def test_free_tier_image_quota_and_timeouts_get_precise_messages(monkeypatch):
+    import fsmart.gemini as gemini
+    from PIL import Image
+    quota={'error':{'code':429,'status':'RESOURCE_EXHAUSTED','message':f'Quota exceeded for metric generate_content_free_tier_requests, limit: 0, model: gemini-3.1-flash-lite-image {KEY}'}}
+    with pytest.raises(ChatUnavailable) as caught:
+        gemini.edit_image(lambda *a,**k:response(data=quota,status=429),KEY,'gemini-3.1-flash-lite-image',Image.new('RGB',(8,8)),'paint')
+    assert 'không có hạn mức miễn phí' in str(caught.value) and 'gpt-image-2' in str(caught.value) and KEY not in str(caught.value)
+    busy={'error':{'code':429,'status':'RESOURCE_EXHAUSTED','message':'Resource exhausted','details':[{'@type':'type.googleapis.com/google.rpc.RetryInfo','retryDelay':'37s'}]}}
+    with pytest.raises(ChatUnavailable) as caught:gemini.generate(lambda *a,**k:response(data=busy,status=429),KEY,'gemini-3.8-flash','sys','hi',[])
+    assert 'chờ 37s' in str(caught.value) and caught.value.status_code==429
+    def slow(*a,**k):raise requests.Timeout()
+    with pytest.raises(ChatUnavailable) as caught:gemini.generate(slow,KEY,'gemini-3.8-flash','sys','hi',[])
+    assert 'không phản hồi trong 60 giây' in str(caught.value) and caught.value.status_code==504
+
+
+def test_short_google_rate_limit_is_waited_out(monkeypatch):
+    import fsmart.gemini as gemini
+    waits=[]
+    monkeypatch.setattr(gemini.time,'sleep',waits.append)
+    busy={'error':{'code':429,'status':'RESOURCE_EXHAUSTED','message':'Resource exhausted','details':[{'retryDelay':'3s'}]}}
+    replies=[response(data=busy,status=429),response('ok')]
+    assert gemini.generate(lambda *a,**k:replies.pop(0),KEY,'gemini-3.5-flash-lite','sys','hi',[])=='ok' and waits==[3.0]

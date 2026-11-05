@@ -4,6 +4,8 @@
    Light mode enabled via :root[data-theme="light"]. */
 
 :root {
+  /* Native controls (select popups, scrollbars, date pickers) follow the theme too. */
+  color-scheme: dark;
   /* Surfaces & Obsidian Depth */
   --bg: #060713;
   --bg-alt: #0a0d1f;
@@ -139,6 +141,7 @@
 
 /* Light Theme Mode — Venetian Pearl & Prismatic Glow */
 :root[data-theme="light"] {
+  color-scheme: light;
   --bg: #f8fafc;
   --bg-alt: #f1f5f9;
   --surface-1: #ffffff;
@@ -291,4 +294,11 @@ body::after {
   body::before {
     animation: none !important;
   }
+}
+
+/* The open list of a <select> is drawn by the OS: give its rows the theme's colours so they never come out white on white. */
+select option,
+select optgroup {
+  background-color: var(--surface-2);
+  color: var(--text);
 }

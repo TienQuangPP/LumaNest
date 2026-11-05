@@ -15,6 +15,46 @@ STYLE_NAMES = {'candy': 'Candy', 'mosaic': 'Mosaic', 'rain_princess': 'Rain Prin
 IMAGE_MODELS = ('gpt-image-1.5', 'gpt-image-1-mini', 'gpt-image-1')
 STYLE_SUGGESTIONS = ['Màu ấm, nét cọ dày, giữ ảnh gốc khá rõ', 'Tranh ghép Mosaic, đậm 70%', 'Màu nước pastel xanh nhạt']
 NOVEL_TERMS = ['mau nuoc', 'watercolor', 'pastel', 'tranh muc', 'ink wash', 'vangogh', 'van gogh', 'monet', 'anime', 'hoat hinh', 'cyberpunk', 'pixel', 'pencil']
+API_DIRECT_INSTRUCTIONS = """
+NGUỒN HIỆN TẠI LÀ MODEL API: model ảnh của chính nhà cung cấp này sẽ vẽ lại ảnh của người dùng, không dùng preset hay VGG19 trên máy.
+Vì vậy quy tắc này ghi đè các quy tắc preset/artwork ở trên: luôn trả engine=reference (trừ khi yêu cầu không phải phong cách thì engine=unsupported),
+preset=candy làm placeholder, steps=50. reference_prompt viết tiếng Anh, mô tả đầy đủ phong cách cần áp lên ảnh: họa sĩ hoặc trường phái nếu có
+(ví dụ Van Gogh: thick swirling impasto brushstrokes, vivid cobalt blues and golden yellows), bảng màu, chất liệu, nét cọ, ánh sáng.
+Không mô tả thay người, mặt, quần áo, tư thế hay bố cục. reply nói rõ model API sẽ vẽ lại ảnh sau khi người dùng bấm tạo.
+"""
+
+PRESET_PROMPTS = {
+    'candy': 'bright candy-coloured palette, soft flowing brushstrokes, playful saturated pinks, oranges and teals',
+    'mosaic': 'stained-glass mosaic of small coloured tiles with dark grout lines, vivid jewel tones',
+    'rain_princess': 'thick warm impasto oil painting, heavy palette-knife strokes, amber and crimson rain-soaked light',
+    'udnie': 'abstract cubist-futurist shapes, bold interlocking colour blocks, Francis Picabia "Udnie" palette',
+}
+VAN_GOGH_PROMPT = ('Vincent van Gogh post-impressionist oil painting, Wheat Field with Cypresses: thick swirling impasto brushstrokes, '
+                   'vivid cobalt blues, golden wheat yellows and deep greens, visible directional strokes everywhere')
+
+
+def api_style_prompt(recipe):
+    """English style description for an API image model, whatever engine the planner picked."""
+    if recipe.engine == 'reference' and recipe.reference_prompt.strip():
+        return recipe.reference_prompt.strip()
+    if recipe.engine == 'artwork':
+        return VAN_GOGH_PROMPT
+    return PRESET_PROMPTS.get(recipe.preset, recipe.title)
+
+
+def api_redraw_prompt(recipe, scene):
+    return ('Paint this scene as an artwork in this style: ' + api_style_prompt(recipe) + '. '
+            f'Style intensity about {round(recipe.strength * 100)}%. Keep the people, poses, clothing colours, objects, '
+            'background and composition described here. No added text, logos, borders or watermarks.\nScene: ' + scene)
+
+
+def api_edit_prompt(recipe):
+    return ('Repaint this exact photo as an artwork in this style: ' + api_style_prompt(recipe) + '. '
+            f'Style intensity about {round(recipe.strength * 100)}% (lower keeps more of the original photo). '
+            'Keep the same people, faces, expressions, poses, clothing, objects, background and composition; '
+            'change only colour, brushwork, texture and rendering. No added text, logos, borders or watermarks.')
+
+
 STYLE_INSTRUCTIONS = """Bạn lập đề xuất Neural Style Transfer cho LumaNest, trả lời JSON theo schema.
 Người dùng đang mô tả phong cách mong muốn. Dùng lịch sử để hiểu các chỉnh sửa như 'nhạt hơn'.
 Chỉ thay đổi màu, họa tiết, nét cọ; không thay người, mặt, quần áo, tư thế, vật thể hay bố cục.
@@ -147,13 +187,13 @@ class StylePlanCache:
             if self.clock() - self._items[key]['created'] > self.ttl:
                 del self._items[key]
 
-    def add(self, recipe,provider='openai'):
+    def add(self, recipe,provider='openai',direct=False):
         with self._lock:
             self._prune()
             while len(self._items) >= self.capacity:
                 del self._items[next(iter(self._items))]
             key = uuid.uuid4().hex
-            self._items[key] = {'recipe': recipe.model_copy(deep=True), 'provider':provider,'created': self.clock(), 'jobs': {}}
+            self._items[key] = {'recipe': recipe.model_copy(deep=True), 'provider':provider,'direct':direct,'created': self.clock(), 'jobs': {}}
             return key
 
     def provider(self,key):
@@ -161,6 +201,13 @@ class StylePlanCache:
             self._prune()
             if key not in self._items:raise KeyError('Style proposal expired')
             return self._items[key]['provider']
+
+    def is_direct(self,key):
+        """True when the chosen API model itself repaints the photo (no local NST step)."""
+        with self._lock:
+            self._prune()
+            if key not in self._items:raise KeyError('Style proposal expired')
+            return self._items[key]['direct']
 
     def get(self, key):
         with self._lock:
