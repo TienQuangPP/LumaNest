@@ -41,10 +41,14 @@
     --on-scrim-muted: rgba(255, 255, 255, 0.85);
     --star-gold: #fbbf24;
 
-    /* Eyebrow Tokens */
+    /* Eyebrow & Context Text Tokens */
     --eyebrow: #f472b6;
     --eyebrow-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
     --eyebrow-dot: #f472b6;
+    --context-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+    --tab-active-color: #ffffff;
+    --tab-active-bg: linear-gradient(180deg, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0.04) 100%);
+    --tab-active-shadow: 0 4px 16px -2px rgba(139, 92, 246, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.25);
 
     /* Aurora Brand Jewels */
     --accent-violet: #9f80f8;
@@ -220,10 +224,14 @@
     --on-scrim: #ffffff;
     --on-scrim-muted: rgba(255, 255, 255, 0.9);
 
-    /* Eyebrow Tokens */
+    /* Eyebrow & Context Text Tokens */
     --eyebrow: #be185d;
     --eyebrow-shadow: none;
     --eyebrow-dot: #be185d;
+    --context-shadow: none;
+    --tab-active-color: #4c1d95;
+    --tab-active-bg: linear-gradient(180deg, rgba(109, 40, 217, 0.12) 0%, rgba(109, 40, 217, 0.03) 100%);
+    --tab-active-shadow: 0 2px 8px -1px rgba(109, 40, 217, 0.2);
 
     --accent-violet: #6d28d9;
     --accent-fuchsia: #c026d3;
@@ -488,13 +496,13 @@
       .photo-card {
         animation: cardScrollReveal linear both;
         animation-timeline: view();
-        animation-range: entry 5% cover 25%;
+        animation-range: entry 0% entry 40%;
       }
 
       @keyframes cardScrollReveal {
         from {
-          opacity: 0.2;
-          transform: perspective(800px) translateY(24px) scale(0.97);
+          opacity: 0.35;
+          transform: perspective(800px) translateY(16px) scale(0.985);
         }
         to {
           opacity: 1;
