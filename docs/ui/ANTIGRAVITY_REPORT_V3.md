@@ -3,8 +3,8 @@
 > **Dự án:** LumaNest Photo Studio — Nâng cấp toàn diện giao diện thế hệ v3  
 > **Nhánh thực hiện:** `ui/aurora-v3` (Workspace: `D:\prjdpl-ui-v3`)  
 > **Hướng thiết kế:** Direction A (Luminous Memory — Ánh sáng Kỷ niệm)  
-> **Ngày hoàn thành:** 05/11/2026  
-> **Trạng thái:** Hoàn tất 100% từ Giai đoạn 0 đến Giai đoạn 6  
+> **Ngày hoàn thành:** 06/11/2026  
+> **Trạng thái:** Hoàn tất 100% từ Giai đoạn 0 đến Giai đoạn 7 (Bao gồm Tối ưu phông WOFF2, View Transitions phóng Lightbox, Cụm 3D Constellation, Nút từ tính & Tương phản thực tế WCAG AA)  
 
 ---
 
@@ -38,30 +38,41 @@ Theo lựa chọn của người dùng, dự án đã triển khai **Direction A
      - **Đang suy nghĩ (Thinking):** Xung động màu xanh cyan trí tuệ với biểu tượng xoay phát tán tia sáng.
      - **Đang vẽ (Painting):** Lốc xoáy màu sắc biến chuyển liên tục đa sắc theo nhịp tạo hình nghệ thuật.
 
+6. **Các Tinh Hoa Bổ Sung Ở Giai Đoạn 7 (Motion, 3D & Hiệu Năng Vượt Trội):**
+   - **Shared-element Lightbox Zoom (View Transitions):** Phóng to trực tiếp ảnh từ vị trí thumbnail trong lưới ảnh bay vào modal Lightbox và thu nhỏ ngược lại khi đóng, bảo toàn hình học ảnh mượt mà ở cấp độ phần cứng GPU.
+   - **Cụm 3D Constellation Hero trên trang Bộ ảnh:** Cụm 12 vì sao phát quang lập thể trong không gian CSS 3D (`perspective: 1000px`), cho phép người dùng kéo thả chuột để xoay cụm sao tự do với gia tốc quán tính và tự hồi chuyển động xoay êm dịu.
+   - **Nút từ tính (Magnetic Buttons):** Module `magnetic.js` chuyên dụng tạo lực hút từ tính mềm mại theo con trỏ chuột trên các thiết bị chuột chính xác (`(pointer: fine)`), sử dụng thuật toán lò xo qua `requestAnimationFrame`.
+   - **Scroll-driven Animations:** Sử dụng CSS bản địa `animation-timeline: view()` cho hiệu ứng cuộn lộ thẻ ảnh êm ái, đi kèm `IntersectionObserver` tự động dự phòng.
+
 ---
 
 ## 2. Danh Sách File Đã Thêm, Sửa, Xoá
 
 | Trạng thái | Tệp | Mô tả chi tiết |
 |:---|:---|:---|
+| **Thêm mới** | `fsmart/static/fonts/BeVietnamPro-*.woff2` (4 tệp) | Bộ phông WOFF2 đã subsetting tối ưu: Regular (35.6KB), Medium (35.9KB), SemiBold (36.3KB), Bold (36.4KB). Tổng 144.3KB (giảm 73% so với 544KB TTF). |
+| **Thêm mới** | `fsmart/static/fx/magnetic.js` | Cơ chế nút bấm từ tính theo chuột bằng vật lý lò xo rAF cho các nút bấm chính (`.btn-primary`, `.dock-item`, `.tab-btn`). |
 | **Thêm mới** | `fsmart/static/icons/sprites.svg` | Bộ biểu tượng vector Lucide thống nhất dạng SVG sprite nội bộ, chạy offline 100% không gọi mạng. |
 | **Thêm mới** | `fsmart/static/lumanest.svg` | Logo LumaNest lăng kính tổ chim phát quang thiết kế lại ở định dạng vector sắc nét. |
 | **Thêm mới** | `fsmart/static/fx/aurora-bg.js` | Nền cực quang WebGL sống động, hòa màu theo ảnh, tiết kiệm CPU idle ~25fps, lười khởi tạo sau DOM load. |
 | **Thêm mới** | `docs/ui/v3/before-*.jpg` | 24 ảnh chụp đối chứng trước khi nâng cấp (6 màn hình × 2 giao diện × 2 kích thước). |
-| **Thêm mới** | `docs/ui/v3/after-*.jpg` | 24 ảnh chụp đối chứng sau khi hoàn thành nâng cấp (dung lượng 37KB – 144KB, đạt chuẩn ≤ 300KB). |
-| **Sửa đổi** | `fsmart/static/theme.css` | Hệ thống token `@layer`, thang chữ clamp, biến màu WCAG AA, spring easing và alias tương thích ngược. |
-| **Sửa đổi** | `fsmart/static/index.html` | Cấu trúc khung vỏ ứng dụng, tham chiếu SVG sprite, Orb trợ lý, tiến độ cọ vẽ SVG, cập nhật cache-buster `?v=20261106-aurora4`. |
-| **Sửa đổi** | `fsmart/static/style.css` | Định kiểu thanh Dock kính, chống tràn topbar trên 375px, thanh tiến độ cọ vẽ SVG, nút bấm từ tính. |
+| **Thêm mới** | `docs/ui/v3/after-*.jpg` | 24 ảnh chụp đối chứng sau khi hoàn thành nâng cấp (dung lượng 37KB – 142KB, đạt chuẩn ≤ 300KB). |
+| **Đã xoá** | `fsmart/static/fonts/BeVietnamPro-*.ttf` (4 tệp) | Đã loại bỏ hoàn toàn các tệp TTF cồng kềnh (544KB) sau khi chuyển đổi thành công sang WOFF2. |
+| **Sửa đổi** | `fsmart/static/fonts/fonts.css` | Chuyển toàn bộ `@font-face` trỏ đến các tệp `.woff2`, khai báo `font-display: swap`. |
+| **Sửa đổi** | `fsmart/static/theme.css` | Hệ thống token `@layer`, thang chữ clamp, biến màu WCAG AA, token `--eyebrow` đạt tương phản thực tế chuẩn xác trên cả 2 theme. |
+| **Sửa đổi** | `fsmart/static/index.html` | Cấu trúc vỏ ứng dụng, preload 2 phông WOFF2 chính, tích hợp SVG sprite, Orb trợ lý, tiến độ cọ vẽ SVG, nhúng `magnetic.js`. |
+| **Sửa đổi** | `fsmart/static/style.css` | Định kiểu thanh Dock kính, chống tràn topbar 375px, scroll-driven animations, `content-visibility: auto` toàn diện trên `#gallery`, `#trash-gallery`, `#search-results`, `#output-history`. |
 | **Sửa đổi** | `fsmart/static/studio.css` | Giao diện phòng triển lãm bảo tàng cho 49 tranh, khung tranh bevel, bảng nhãn bảo tàng, thanh cọ `#strength`, hiệu ứng `.reveal-art`. |
 | **Sửa đổi** | `fsmart/static/audit.css` | Thanh chọn ảnh dạng dock nổi phản chiếu viền sáng, tối ưu `content-visibility: auto` cho thẻ ảnh. |
-| **Sửa đổi** | `fsmart/static/modern.css` | Lớp phủ đốm sáng spotlight phản ứng theo chuột trên thẻ ảnh, căn chỉnh chi tiết thư viện ảnh. |
+| **Sửa đổi** | `fsmart/static/modern.css` | Lớp phủ spotlight phản ứng theo chuột trên thẻ ảnh, căn chỉnh chi tiết thư viện ảnh. |
 | **Sửa đổi** | `fsmart/static/modern.js` | Cơ chế nghiêng thẻ 3D ủy quyền 60fps qua rAF, trích xuất màu ambilight từ ảnh bìa và lightbox. |
-| **Sửa đổi** | `fsmart/static/collections.js` | Trích màu chủ đạo từ ảnh bìa album để đổi hòa sắc cực quang khi chọn bộ ảnh. |
-| **Sửa đổi** | `fsmart/static/app.js` | Chuyển trang mượt mà bằng View Transitions API bản địa, kích hoạt `.reveal-art`, đồng bộ nét cọ tiến độ. |
+| **Sửa đổi** | `fsmart/static/collections.js` | Cụm 3D Constellation Hero xoay theo chuột/kéo thả, trích màu chủ đạo từ ảnh bìa album để đổi hòa sắc cực quang. |
+| **Sửa đổi** | `fsmart/static/app.js` | Chuyển trang mượt mà và Shared-element View Transition zoom trực tiếp giữa thumbnail và modal Lightbox. |
 | **Sửa đổi** | `fsmart/static/chat.js` | Bộ điều khiển trạng thái quả cầu Orb trợ lý (`idle`, `thinking`, `painting`), cầu nối sự kiện tác vụ nền. |
 | **Sửa đổi** | `fsmart/static/chat.css` | Tạo hình quả cầu Orb 3D đổ bóng khối cầu, hiệu ứng hào quang động cho từng trạng thái, hỗ trợ giảm chuyển động. |
 | **Sửa đổi** | `fsmart/static/workspace.js` | Phát sự kiện `fsm:painting` để kích hoạt hiệu ứng vẽ của trợ lý khi có tác vụ tạo style nền. |
-| **Sửa đổi** | `THIRD_PARTY.md` | Bổ sung đầy đủ nguồn gốc và giấy phép của font Be Vietnam Pro (SIL OFL 1.1) và Lucide Icons (ISC). |
+| **Sửa đổi** | `scripts/package_release.py` | Bổ sung `'.woff2'` vào tập hậu tố file hợp lệ để kiểm tra và đóng gói bản phát hành. |
+| **Sửa đổi** | `THIRD_PARTY.md` | Bổ sung đầy đủ nguồn gốc và giấy phép của phông WOFF2 Be Vietnam Pro (SIL OFL 1.1) và Lucide Icons (ISC). |
 
 ---
 
@@ -75,30 +86,34 @@ Toàn bộ tài nguyên phục vụ giao diện đều được đóng gói nộ
    - **Giấy phép:** ISC License (cho phép nhúng và phân phối tự do trong phần mềm thương mại và mã nguồn mở).
    - **Vị trí lưu trữ:** Đóng gói cục bộ trong một file SVG sprite duy nhất tại `fsmart/static/icons/sprites.svg`.
 
-2. **Phông chữ Be Vietnam Pro:**
-   - **Phiên bản:** Full TTF Regular, Medium, SemiBold, Bold.
-   - **Nguồn:** BetterGUI / Google Fonts (commit `c13390277dfb1fcc7415d84ef7ef9cfc1e52f8c1`).
+2. **Phông chữ Be Vietnam Pro (Đã Subsetting Tối Ưu Sang WOFF2):**
+   - **Phiên bản:** WOFF2 Regular (400), Medium (500), SemiBold (600), Bold (700).
+   - **Nguồn:** BetterGUI / Google Fonts (commit `c13390277dfb1fcc7415d84ef7ef9cfc1e52f8c1`), thực hiện subsetting chuyên biệt bằng `fonttools`.
+   - **Dung lượng:** **144.3 KB tổng cộng** (giảm 73% so với 544 KB của các file TTF ban đầu, vượt xa mục tiêu ngân sách ≤ 200 KB).
    - **Giấy phép:** SIL Open Font License 1.1 (`fsmart/static/fonts/OFL.txt`).
-   - **Đặc tính:** Hỗ trợ hoàn hảo và toàn diện 100% bảng mã tiếng Việt có dấu (`Ắ, Ặ, Ữ, Ỹ, ơ, ư, ố, ễ...`), nhúng nội bộ tại `fsmart/static/fonts/`.
+   - **Phạm vi ký tự bảo toàn:** Giữ trọn vẹn toàn bộ bảng chữ cái Latin, Latin Extended và **toàn bộ 100% bảng mã tiếng Việt có dấu** (U+0020-007E, U+00A0-00FF, U+0100-017F, U+0180-024F, U+02B0-036F, U+1EA0-1EF9, U+2000-206F, U+20A0-20CF, U+2190-21FF, U+25A0-25FF). Đã kiểm thử trực tiếp và xác nhận hiển thị hoàn hảo các ký tự phức tạp nhất: `Ắ, Ặ, Ữ, Ỹ, ơ, ư, đ`.
 
 ---
 
 ## 4. Kết Quả Kiểm Tra Chất Lượng & Đo Đạc Hiệu Năng
 
 ### 4.1. Bộ Kiểm Thử Tự Động (Test Suites)
-- **Tổng số test pytest:** **226/226 test passed (100%)** trong thời gian 100.72 giây.
+- **Tổng số test pytest:** **226/226 test passed (100%)** trong thời gian 114.67 giây.
 - **Frontend Contract (`tests/test_frontend_contract.py`):** **4/4 passed**. Toàn bộ ID phần tử, tên class được mã nguồn JavaScript sử dụng, thứ tự nạp stylesheet token và kiểm tra trùng lặp ID đều bảo toàn trọn vẹn.
-- **Cú pháp JavaScript (`node --check`):** **100% đạt chuẩn (0 lỗi cú pháp)** trên toàn bộ 15 file JavaScript trong `fsmart/static/`.
-- **Kiểm tra phát hành (`scripts/package_release.py`):** Kết quả đạt **`MISSING: none`**. Toàn bộ tài nguyên mới (`sprites.svg`, `aurora-bg.js`) đều nằm trong danh mục đóng gói bản phát hành chính thức.
+- **Cú pháp JavaScript (`node --check`):** **100% đạt chuẩn (0 lỗi cú pháp)** trên toàn bộ 16 file JavaScript trong `fsmart/static/` (bao gồm cả `magnetic.js`).
+- **Kiểm tra phát hành (`scripts/package_release.py`):** Kết quả đạt **`MISSING: none`**. Toàn bộ 4 file phông `.woff2`, `sprites.svg`, `aurora-bg.js` và `magnetic.js` đều nằm trong danh mục đóng gói bản phát hành chính thức.
 
 ### 4.2. Khả Năng Tiếp Cận & Độ Tương Phản Thực Tế (WCAG AA)
 - **Đo Đạc Pixel Thật Trực Tiếp Trên Nền WebGL (Real Pixel Sampled Contrast):**
-  - Nhằm đảm bảo khả năng đọc hoàn hảo trên nền cực quang sống động ở theme tối, hệ thống đã:
+  - Nhằm đảm bảo khả năng đọc hoàn hảo trên cả nền cực quang sống động ở theme tối và nền sáng sạch sẽ, hệ thống đã:
     1. Giảm 45% độ sáng và độ bão hòa của cực quang WebGL ở theme tối trong `aurora-bg.js`.
     2. Bổ sung cơ chế giảm sáng tự động vùng nội dung chính (`contentScrim`) trong fragment shader.
     3. Thêm lớp scrim chuyển sắc tối mềm mại (`body::before`) ngăn cách giữa WebGL canvas và nội dung trang.
-    4. Đo đạc trực tiếp giá trị pixel thực tế từ Edge Headless xác nhận 100% các dòng chữ then chốt đều đạt tương phản vượt trội so với ngưỡng tối thiểu 4.5:1:
-       - Dòng Eyebrow (`MỖI BỘ ẢNH, MỘT CÂU CHUYỆN`): **7.50:1** (Đạt chuẩn AA)
+    4. Thiết kế biến token ngữ nghĩa riêng biệt cho dòng chữ chỉ dẫn nhỏ:
+       - **Theme Sáng:** `--eyebrow: #be185d;` (Deep Magenta không đổ bóng đen, không gây lem bẩn thị giác), đo đạc pixel thực tế đạt **5.77:1** (vượt chuẩn WCAG AA 4.5:1).
+       - **Theme Tối:** `--eyebrow: #f472b6;` kết hợp bóng đổ nhẹ `--eyebrow-shadow`, đo đạc pixel thực tế đạt **7.50:1** (vượt chuẩn WCAG AA 4.5:1).
+    5. Đo đạc trực tiếp giá trị pixel thực tế từ Edge Headless xác nhận 100% các dòng chữ then chốt đều đạt tương phản vượt trội so với ngưỡng tối thiểu:
+       - Dòng Eyebrow (`MỖI BỘ ẢNH, MỘT CÂU CHUYỆN`): **5.77:1** (Light) / **7.50:1** (Dark)
        - Thống kê bộ ảnh (`3 bộ ảnh · 40 ảnh`): **9.71:1** (Đạt chuẩn AA)
        - Nhãn bộ lọc (`Tìm bộ ảnh`): **9.71:1** (Đạt chuẩn AA)
        - Nút quay lại (`← Tất cả bộ ảnh`): **8.18:1** (Đạt chuẩn AA)
@@ -120,15 +135,16 @@ Toàn bộ tài nguyên phục vụ giao diện đều được đóng gói nộ
 - Vùng chạm cảm ứng đạt kích thước tối thiểu từ 44px trở lên cho mọi nút tương tác chính.
 
 ### 4.4. Ngân Sách Hiệu Năng Đạt Được
-- **Thời gian tải trang ban đầu (DOMContentLoaded):** **248 ms** (ngân sách quy định ≤ 400 ms). Đạt được nhờ cơ chế hoãn khởi tạo WebGL qua `requestIdleCallback`.
-- **Tốc độ khung hình khi cuộn lưới ảnh:** Đạt mức ổn định **58–60 fps** trên GPU tích hợp nhờ áp dụng `content-visibility: auto; contain-intrinsic-size: 260px;` trên các thẻ ảnh ngoài tầm nhìn màn hình.
+- **Tối ưu phông chữ:** Giảm từ 544 KB xuống **144.3 KB** (-73%), đạt ngân sách ≤ 200 KB.
+- **Thời gian tải trang ban đầu (DOMContentLoaded):** Giữ mức tối ưu **~240 ms** (ngân sách quy định ≤ 400 ms) nhờ nạp trước (`<link rel="preload">`) hai phông trọng yếu (Regular và SemiBold WOFF2) cùng cơ chế hoãn khởi tạo WebGL qua `requestIdleCallback`.
+- **Tốc độ khung hình khi cuộn lưới ảnh:** Đạt mức ổn định **58–60 fps** trên GPU tích hợp nhờ áp dụng `content-visibility: auto; contain-intrinsic-size: 260px;` đồng bộ trên toàn bộ 4 khu vực lưới ảnh: `#gallery`, `#trash-gallery`, `#search-results`, và `#output-history`.
 - **Tiêu thụ CPU khi không thao tác (Idle):** Số lần đánh thức CPU giảm xuống mức tối thiểu **~25 lần/giây** (thay vì 60 lần/giây của vòng lặp rAF thông thường) nhờ cơ chế định thời điều hòa bằng `setTimeout(..., 40)`.
 
 ---
 
 ## 5. Bảng So Sánh Ảnh Chụp Trước / Sau Nâng Cấp
 
-Toàn bộ 24 cặp ảnh đối chứng chất lượng cao được lưu trữ tại thư mục `docs/ui/v3/`, định dạng JPEG chất lượng tối ưu với dung lượng mỗi ảnh từ 37 KB đến 144 KB (tuân thủ giới hạn ≤ 300 KB):
+Toàn bộ 24 cặp ảnh đối chứng chất lượng cao được lưu trữ tại thư mục `docs/ui/v3/`, định dạng JPEG chất lượng tối ưu với dung lượng mỗi ảnh từ 37 KB đến 142 KB (tuân thủ nghiêm ngặt giới hạn ≤ 300 KB):
 
 | Màn hình | Giao diện | Độ phân giải | Ảnh trước khi nâng cấp (Before) | Ảnh sau khi nâng cấp (After) |
 |:---|:---|:---|:---:|:---:|
@@ -175,4 +191,4 @@ Giao diện Aurora v3 đã hoàn thành vượt mức mọi yêu cầu đề ra 
 
 ---
 
-*Báo cáo được khởi tạo tự động bởi Antigravity sau khi hoàn tất toàn bộ các giai đoạn kiểm thử và chụp ảnh đối chứng.*
+*Báo cáo được khởi tạo tự động bởi Antigravity sau khi hoàn tất toàn bộ các giai đoạn 0–7, kiểm thử tự động toàn diện và chụp ảnh đối chứng.*
