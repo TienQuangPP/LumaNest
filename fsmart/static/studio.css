@@ -607,11 +607,35 @@
   scrollbar-width: thin;
 }
 
+#page-studio .library-chip {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--glass-border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-spring);
+}
+
+#page-studio .library-chip:hover {
+  color: var(--text);
+  border-color: var(--glass-border-hover);
+  transform: translateY(-1px);
+}
+
+#page-studio .library-chip.active {
+  background: var(--gradient-brand);
+  color: var(--text-on-brand);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(217, 70, 239, 0.4);
+}
+
 #page-studio .library-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px;
+  gap: 6px;
+  padding: 8px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   background: var(--surface-1);
@@ -619,19 +643,31 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  transition: transform var(--dur-base) var(--ease-spring),
+              box-shadow var(--dur-base) var(--ease-spring),
+              border-color var(--dur-fast);
 }
 
 #page-studio .library-card img {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: calc(var(--radius-md) - 3px);
-  background: var(--surface-2);
+  border-radius: calc(var(--radius-md) - 4px);
+  background: var(--surface-stage);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+#page-studio .library-card:hover img {
+  transform: scale(1.04);
 }
 
 #page-studio .library-card-name {
-  font-size: 12px;
-  line-height: 1.3;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -639,7 +675,9 @@
 }
 
 #page-studio .library-card:hover {
-  border-color: var(--glass-border-hover);
+  transform: translateY(-4px);
+  border-color: var(--accent-fuchsia);
+  box-shadow: 0 14px 32px -4px rgba(0, 0, 0, 0.6), 0 0 20px rgba(217, 70, 239, 0.35);
 }
 
 #page-studio .library-card:focus-visible {
@@ -648,8 +686,9 @@
 }
 
 #page-studio .library-card.selected {
-  border-color: transparent;
-  box-shadow: 0 0 0 2px var(--accent-fuchsia);
+  border-color: var(--accent-fuchsia);
+  box-shadow: 0 0 0 2px var(--accent-fuchsia), 0 0 25px rgba(217, 70, 239, 0.45);
+  background: var(--surface-2);
 }
 
 #page-studio .library-card:disabled {

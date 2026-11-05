@@ -15,7 +15,11 @@ function renderCollections(){
     const info=el('div','collection-card-info');info.append(el('h3','',album.name));
     info.append(el('p','',album.photo_count?`${album.indexed_count} ảnh đã xử lý · ${album.photo_count-album.indexed_count} chưa sẵn sàng`:'Bộ ảnh mới · thêm những tấm ảnh đầu tiên'));
     info.append(el('span','collection-card-open','Mở bộ ảnh ↗'));card.append(cover,info);
-    card.onclick=()=>chooseAlbum(album.id).catch(error=>toast(error.message,true));return card;
+    card.onclick=()=>{
+      if(album.cover_photo_id&&typeof extractAmbientColors==='function')extractAmbientColors(`/api/photos/${album.cover_photo_id}/image?thumbnail=true`);
+      chooseAlbum(album.id).catch(error=>toast(error.message,true));
+    };
+    return card;
   }));
   $('collections-empty').classList.toggle('hidden',visible.length>0);
   $('collections-empty-title').textContent=term?'Không tìm thấy bộ ảnh':'Tạo bộ ảnh đầu tiên';

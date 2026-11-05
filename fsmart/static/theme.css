@@ -205,10 +205,10 @@
     --glass-rim-subtle: inset 0 1px 1px 0 rgba(255, 255, 255, 0.7);
     --glass-prismatic: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(124, 58, 237, 0.15) 35%, rgba(219, 39, 119, 0.12) 70%, rgba(8, 145, 178, 0.1) 100%);
 
-    /* High contrast text against light surfaces (WCAG AA > 7:1) */
+    /* High contrast text against light surfaces (WCAG AA > 5.5:1 for all text) */
     --text: #090d16;
-    --text-muted: #475569;
-    --text-subtle: #64748b;
+    --text-muted: #334155;
+    --text-subtle: #475569;
     --text-on-dark: #ffffff;
     --text-on-brand: #ffffff;
     --scrim: rgba(15, 23, 42, 0.72);

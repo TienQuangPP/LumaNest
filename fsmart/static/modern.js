@@ -148,6 +148,7 @@ async function openLightbox(id){
     $('lightbox-detail').textContent=`${photo.width} × ${photo.height} px · ${photo.face_count} khuôn mặt`;
     $('photo-tags').value=photo.tags.join(', ');$('photo-notes').value=photo.notes;
     $('lightbox-download').href=`/api/photos/${id}/original`;updateLightboxStar();
+    extractAmbientColors(`/api/photos/${id}/image?thumbnail=true`);
     $('metadata-form').inert=false;$('lightbox-favorite').disabled=false;$('lightbox-create').disabled=false;$('lightbox-similar').disabled=false;
     $('lightbox-prev').disabled=index<=0;$('lightbox-next').disabled=index<0||index>=state.photos.length-1;
   }catch(error){$('lightbox-name').textContent='Chưa mở được ảnh';toast(error.message,true);}
@@ -205,3 +206,45 @@ commandButton.onclick=openCommands;$('command-close').onclick=()=>palette.close(
 $('command-query').onkeydown=event=>{if(event.key==='ArrowDown'){event.preventDefault();$('command-results').querySelector('button')?.focus();}if(event.key==='Enter'){event.preventDefault();$('command-results').querySelector('button')?.click();}};
 $('command-results').onkeydown=event=>{const options=[...$('command-results').querySelectorAll('button')],index=options.indexOf(document.activeElement);if(index<0||!['ArrowDown','ArrowUp'].includes(event.key))return;event.preventDefault();if(event.key==='ArrowUp'&&index===0)return $('command-query').focus();options[Math.min(options.length-1,Math.max(0,index+(event.key==='ArrowDown'?1:-1)))].focus();};
 document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openCommands();}});
+
+function extractAmbientColors(url){
+  if(!url||reduceMotion.matches)return;
+  const canvas=document.createElement('canvas');canvas.width=16;canvas.height=16;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const img=new Image();img.crossOrigin='anonymous';
+  img.onload=()=>{
+    try{
+      ctx.drawImage(img,0,0,16,16);
+      const data=ctx.getImageData(0,0,16,16).data;
+      const c1=[data[0]/255,data[1]/255,data[2]/255];
+      const c2=[data[60]/255,data[61]/255,data[62]/255];
+      const c3=[data[960]/255,data[961]/255,data[962]/255];
+      const c4=[data[1020]/255,data[1021]/255,data[1022]/255];
+      window.dispatchEvent(new CustomEvent('fsm:ambient-photo',{detail:[c1,c2,c3,c4]}));
+    }catch(_){}
+  };
+  img.src=url;
+}
+
+(()=>{
+  if(reduceMotion.matches)return;
+  let activeCard=null,rx=0,ry=0,raf=null;
+  document.addEventListener('pointermove',event=>{
+    const card=event.target.closest('#gallery .photo-card, #output-history .photo-card, .collections-grid .collection-card');
+    if(!card){
+      if(activeCard){activeCard.style.transform='';activeCard=null;}
+      return;
+    }
+    activeCard=card;
+    const rect=card.getBoundingClientRect();
+    rx=((event.clientX-rect.left)/rect.width-0.5);
+    ry=((event.clientY-rect.top)/rect.height-0.5);
+    if(!raf){
+      raf=requestAnimationFrame(()=>{
+        if(activeCard)activeCard.style.transform=`perspective(800px) rotateY(${rx*7}deg) rotateX(${-ry*7}deg) translateY(-3px)`;
+        raf=null;
+      });
+    }
+  },{passive:true});
+  document.addEventListener('pointerleave',()=>{if(activeCard){activeCard.style.transform='';activeCard=null;}});
+})();
