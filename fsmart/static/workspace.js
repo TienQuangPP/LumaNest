@@ -126,6 +126,7 @@ async function refreshTasks(){
     const jobs=await api('/api/jobs');
     const signature=jobs.map(j=>`${j.id}:${j.status}:${j.progress}`).join('|');
     const active=jobs.filter(j=>['queued','running'].includes(j.status));
+    window.dispatchEvent(new CustomEvent('fsm:painting',{detail:active.some(j=>['stylize','bulk-style'].includes(j.kind))}));
     $('task-summary').textContent=active.length?`${active.length} tác vụ đang chờ hoặc xử lý`:'Không có tác vụ đang chạy';
     if(signature!==lastJobsSignature){
       const previous=lastJobsSignature;lastJobsSignature=signature;

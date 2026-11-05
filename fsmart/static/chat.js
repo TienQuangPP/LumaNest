@@ -83,8 +83,22 @@
     }
   }
 
+  function setOrbState(state) {
+    const launcher = $('chat-launcher');
+    if (!launcher) return;
+    launcher.classList.remove('is-thinking', 'is-painting', 'is-idle');
+    launcher.classList.add(`is-${state}`);
+    launcher.dataset.orbState = state;
+  }
+
+  window.addEventListener('fsm:painting', (e) => setOrbState(e.detail ? 'painting' : 'idle'));
+  window.addEventListener('fsm:thinking', (e) => setOrbState(e.detail ? 'thinking' : 'idle'));
+
   function setPending(value) {
     chat.pending = value;
+    if (!value) {
+      setOrbState('idle');
+    }
     $('chat-send').disabled = value;
     $('chat-new').disabled = value;
     $('chat-mode-support').disabled = value;
@@ -155,6 +169,7 @@
       const photo = findPhotoById(select.value);
       if (!photo) { status.textContent = 'Chọn một ảnh trong danh sách trước. Nếu chưa có ảnh, thêm ảnh vào Thư viện.'; return; }
       setPending(true);
+      setOrbState('painting');
       status.textContent = redraw ? `${plan.api_label||providerName} đang xem ảnh rồi vẽ lại bằng ${plan.image_model}, thường 20–90 giây…` : plan.direct ? `Đang gửi ảnh tới ${plan.api_label||providerName} · ${plan.image_model}. Model API đang vẽ lại, thường 10–60 giây…` : plan.engine === 'reference' ? 'Đang tạo ảnh phong cách rồi chuyển style. Có thể mất vài phút.' : 'Đang tạo tác phẩm bằng model NST…';
       try {
         const result = await createFromStyleRecipe(plan, photo);
@@ -234,6 +249,7 @@
       return;
     }
     setPending(true);
+    setOrbState('thinking');
     if (chat.mode === 'style') chat.lastStylePrompt = text;
     message('user', text, 'Bạn');
     $('chat-input').value = '';

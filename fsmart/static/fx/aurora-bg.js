@@ -187,9 +187,9 @@
     let targetMouseX = 0.5, targetMouseY = 0.5;
     let lastActive = performance.now();
     let lastFrameTime = performance.now();
-    let lastDrawTime = 0;
     let lowFpsCount = 0;
     let rafId = null;
+    let idleTimer = null;
 
     function resize() {
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -209,6 +209,10 @@
       lastActive = performance.now();
       lastFrameTime = performance.now();
       lowFpsCount = 0;
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+      }
       if (!rafId && !document.hidden) {
         rafId = requestAnimationFrame(loop);
       }
@@ -247,18 +251,8 @@
       }
 
       const idleDuration = now - lastActive;
-      // When idle > 3s, gently render at ~25fps (interval 40ms) to conserve CPU/GPU
-      const frameInterval = idleDuration > 3000 ? 40 : 16;
-      const elapsedSinceDraw = now - lastDrawTime;
-
-      if (elapsedSinceDraw < frameInterval) {
-        rafId = requestAnimationFrame(loop);
-        return;
-      }
-
       const frameDelta = now - lastFrameTime;
       lastFrameTime = now;
-      lastDrawTime = now;
 
       // Only evaluate FPS drops during active user interaction
       if (idleDuration <= 3000) {
@@ -303,11 +297,26 @@
 
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-      rafId = requestAnimationFrame(loop);
+      if (idleDuration > 3000) {
+        // Conserve CPU/GPU: sleep ~40ms before next rAF (drops wakeups from 60/s to ~25/s)
+        idleTimer = setTimeout(() => {
+          idleTimer = null;
+          if (!document.hidden && !rafId) {
+            rafId = requestAnimationFrame(loop);
+          }
+        }, 40);
+        rafId = null;
+      } else {
+        rafId = requestAnimationFrame(loop);
+      }
     }
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
+        if (idleTimer) {
+          clearTimeout(idleTimer);
+          idleTimer = null;
+        }
         if (rafId) {
           cancelAnimationFrame(rafId);
           rafId = null;
