@@ -41,6 +41,11 @@
     --on-scrim-muted: rgba(255, 255, 255, 0.85);
     --star-gold: #fbbf24;
 
+    /* Eyebrow Tokens */
+    --eyebrow: #f472b6;
+    --eyebrow-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    --eyebrow-dot: #f472b6;
+
     /* Aurora Brand Jewels */
     --accent-violet: #9f80f8;
     --accent-fuchsia: #d946ef;
@@ -214,6 +219,11 @@
     --scrim: rgba(15, 23, 42, 0.72);
     --on-scrim: #ffffff;
     --on-scrim-muted: rgba(255, 255, 255, 0.9);
+
+    /* Eyebrow Tokens */
+    --eyebrow: #be185d;
+    --eyebrow-shadow: none;
+    --eyebrow-dot: #be185d;
 
     --accent-violet: #6d28d9;
     --accent-fuchsia: #c026d3;
