@@ -33,7 +33,8 @@
       card.title = `${item.title} — ${item.artist}${item.date ? ', ' + item.date : ''}\n${item.licence}`;
       const image = el('img');
       image.src = item.thumb_url; image.alt = item.name; image.loading = 'lazy'; image.decoding = 'async';
-      card.append(image, el('span', 'library-card-name', item.name));
+      const year = (item.date || '').replace(/date QS:.*$/, '').replace(/^between /, '').replace(/ and /, '–').trim();
+      card.append(image, el('span', 'library-card-name', item.name), el('span', 'library-card-meta', [item.artist, year].filter(Boolean).join(' · ')));
       card.onclick = () => selectLibraryStyle(item);
       return card;
     }));
