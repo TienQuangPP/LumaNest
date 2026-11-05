@@ -379,16 +379,22 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-4);
   font-size: 12px;
   color: var(--text-subtle);
   position: sticky;
   top: 0;
-  z-index: 15;
+  z-index: var(--z-topbar, 110);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .topbar #breadcrumb {
   color: var(--text-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
 }
 
 .topbar #breadcrumb span {
@@ -2061,10 +2067,21 @@ progress::-moz-progress-bar {
   }
   .topbar {
     height: 56px;
-    padding: 0 20px;
+    padding: 0 12px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .topbar #breadcrumb {
+    font-size: 11px;
+    max-width: 130px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .topbar-right {
-    gap: 10px;
+    gap: 6px;
+    flex-shrink: 0;
+    align-items: center;
   }
   .avatar {
     width: 28px;
@@ -2072,7 +2089,11 @@ progress::-moz-progress-bar {
     font-size: 9px;
   }
   .connection {
-    font-size: 9px;
+    font-size: 0;
+    padding: 6px;
+  }
+  .connection i {
+    margin: 0;
   }
   main {
     padding: 0 20px 40px;

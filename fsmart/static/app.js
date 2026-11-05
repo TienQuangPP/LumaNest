@@ -22,12 +22,19 @@ function navigate(page){
   if(!['collections','library','search','studio','trash','system'].includes(page))page='collections';
   if(['library','search','studio','trash'].includes(page)&&!currentAlbum())page='collections';
   state.page=page;localStorage.setItem('fsm-page',page);
-  document.querySelectorAll('.page').forEach(node=>node.classList.toggle('active',node.id===`page-${page}`));
-  $('collection-workspace').classList.toggle('hidden',!['library','search','studio','trash'].includes(page));
-  document.querySelectorAll('.nav-item').forEach(node=>node.classList.toggle('active',node.dataset.page===(page==='system'?'system':'collections')));
-  document.querySelectorAll('.collection-tabs [role="tab"]').forEach(node=>{const active=node.dataset.page===page;node.setAttribute('aria-selected',String(active));node.tabIndex=active?0:-1;});
-  updateCollectionContext();window.scrollTo({top:0,behavior:'instant'});
-  document.dispatchEvent(new CustomEvent('fsm:page',{detail:page}));
+  const updateDom=()=>{
+    document.querySelectorAll('.page').forEach(node=>node.classList.toggle('active',node.id===`page-${page}`));
+    $('collection-workspace').classList.toggle('hidden',!['library','search','studio','trash'].includes(page));
+    document.querySelectorAll('.nav-item').forEach(node=>node.classList.toggle('active',node.dataset.page===(page==='system'?'system':'collections')));
+    document.querySelectorAll('.collection-tabs [role="tab"]').forEach(node=>{const active=node.dataset.page===page;node.setAttribute('aria-selected',String(active));node.tabIndex=active?0:-1;});
+    updateCollectionContext();window.scrollTo({top:0,behavior:'instant'});
+    document.dispatchEvent(new CustomEvent('fsm:page',{detail:page}));
+  };
+  if(document.startViewTransition&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.startViewTransition(updateDom);
+  }else{
+    updateDom();
+  }
 }
 document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => navigate(button.dataset.page)));
 async function busy(button, label, operation) { const old = button.textContent; button.disabled = true; button.textContent = label; try { return await operation(); } catch (error) {toast(error.message, true);} finally {button.disabled = button.id==='run-style' && (!state.selected||!!state.styleGenerating); button.textContent = old;} }
