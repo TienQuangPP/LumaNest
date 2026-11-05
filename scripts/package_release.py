@@ -14,7 +14,7 @@ FILES = ('README.md', 'THIRD_PARTY.md', 'SECURITY.md', 'VERSION', '.gitignore',
          '.gitattributes', 'requirements.txt', 'requirements-ml.txt', 'requirements-cpu.txt',
          'requirements-semantic.txt', 'requirements-dev.txt', 'requirements-lock.txt',
          'run.ps1', 'setup.ps1', 'Chay-LumaNest.cmd', 'docs/assets/lumanest-cover.jpg')
-SUFFIXES = {'.py', '.js', '.css', '.html', '.svg', '.ico', '.ttf', '.md', '.json', '.txt', '.cs', '.ps1', '.cmd', '.yml'}
+SUFFIXES = {'.py', '.js', '.css', '.html', '.svg', '.ico', '.ttf', '.woff2', '.md', '.json', '.txt', '.cs', '.ps1', '.cmd', '.yml'}
 SECRET = re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,}|AIza[A-Za-z0-9_-]{35}(?![A-Za-z0-9_-])')
 
 
