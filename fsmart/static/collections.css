@@ -1,29 +1,79 @@
-/* LumaNest Collections & 3D Bento Grid Layout — Aurora 2026 */
+/* LumaNest Collections & Bento Grid Layout — Editorial & iOS Frosted Glass */
 
 .collections-hero {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  gap: 32px;
-  padding: 36px 0 42px;
+  text-align: center;
+  gap: 22px;
+  padding: 52px 20px 44px;
   border-bottom: 1px solid var(--glass-border);
 }
 
+.collections-hero > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.collections-hero .eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3.5px;
+  color: var(--hero-muted, var(--text-muted));
+  margin-bottom: 14px;
+  justify-content: center;
+}
+
 .collections-hero h1 {
-  font-size: 48px;
-  letter-spacing: -1.5px;
+  font-size: clamp(52px, 4.2vw, 64px);
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--hero-title, var(--text));
+  font-family: var(--font-display);
+  line-height: 1.2;
+  text-shadow: var(--hero-shadow, none);
+}
+
+.collections-hero h1 .serif {
+  font-family: inherit;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: inherit !important;
+  background: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  filter: none !important;
+  text-shadow: inherit !important;
 }
 
 .collections-hero > div > p:last-child {
-  color: var(--text-muted);
-  font-size: 13.5px;
+  color: var(--hero-muted, var(--text-muted));
+  font-size: 14px;
   line-height: 1.8;
   max-width: 650px;
-  margin-top: 18px;
+  margin-top: 14px;
 }
 
-.collections-hero > .button {
+.collections-hero > .button,
+#create-collection {
   flex-shrink: 0;
+  border-radius: var(--radius-full) !important;
+  background: var(--button-primary-bg) !important;
+  color: var(--button-primary-text) !important;
+  font-weight: 600 !important;
+  padding: 12px 28px !important;
+  border: 1px solid transparent !important;
+  box-shadow: var(--shadow-button-3d) !important;
+  margin-top: 8px;
+}
+
+.collections-hero > .button:hover,
+#create-collection:hover {
+  background: var(--button-primary-hover) !important;
+  color: var(--button-primary-text) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-button-3d) !important;
 }
 
 .collections-toolbar {
@@ -37,6 +87,7 @@
 .collections-toolbar p {
   font-size: 12.5px;
   margin-top: 6px;
+  color: var(--text-muted);
 }
 
 .collection-filter {
@@ -44,7 +95,7 @@
   gap: 7px;
   font-size: 12.5px;
   color: var(--text-muted);
-  width: min(290px, 45%);
+  width: min(320px, 45%);
 }
 
 .collection-filter input {
@@ -52,22 +103,30 @@
   min-width: 0;
   border: 1px solid var(--input-border);
   background: var(--input-bg);
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  color: var(--text);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: var(--radius-full);
+  padding: 11px 20px;
+  color: var(--input-text, var(--text));
   font-size: 13px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast), transform var(--dur-fast);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast), transform var(--dur-fast), background var(--dur-fast);
+}
+
+.collection-filter input::placeholder {
+  color: var(--input-placeholder, var(--text-subtle));
+  opacity: 1;
 }
 
 .collection-filter input:focus {
-  border-color: var(--accent-violet);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25), 0 0 15px rgba(139, 92, 246, 0.2);
+  border-color: var(--input-focus-border, var(--focus));
+  background: var(--input-bg);
+  box-shadow: 0 0 0 3px var(--info-bg);
   transform: translateY(-1px);
   outline: none;
 }
 
-/* 3D Bento Grid */
+/* iOS Frosted Bento Grid */
 .collections-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -82,7 +141,9 @@
   overflow: hidden;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
-  background: var(--surface-1);
+  background: var(--surface-card);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
   text-align: left;
   color: var(--text);
   box-shadow: var(--shadow-3d-card);
@@ -108,14 +169,14 @@
 }
 
 .collection-card:hover::after {
-  opacity: 0.8;
+  opacity: 0.5;
   left: 140%;
 }
 
 .collection-card:hover {
   box-shadow: var(--shadow-3d-hover);
-  border-color: var(--glass-border-active);
-  transform: perspective(1000px) translateY(-10px) rotateX(2deg) scale(1.02);
+  border-color: var(--glass-border-hover);
+  transform: perspective(1000px) translateY(-8px) scale(1.015);
 }
 
 /* Bento Layout: Featured first collection */
@@ -123,7 +184,7 @@
   grid-column: span 2;
   display: grid;
   grid-template-columns: 1.35fr 1fr;
-  border-color: var(--glass-border-active);
+  border-color: var(--glass-border-hover);
 }
 
 .collections-grid .collection-card:first-child::before {
@@ -132,8 +193,9 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: var(--gradient-brand);
+  height: 2px;
+  background: var(--glass-border-hover);
+  box-shadow: 0 1px 8px var(--glass-border);
   z-index: 3;
 }
 
@@ -337,11 +399,13 @@
 }
 
 .collection-tabs > button[aria-selected=true] {
-  color: var(--text-on-dark);
-  border-color: var(--accent-violet);
-  background: linear-gradient(180deg, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0.04) 100%);
+  color: var(--text);
+  border-color: var(--glass-border-active);
+  background: var(--glass-selected);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   font-weight: 600;
-  box-shadow: 0 4px 16px -2px rgba(139, 92, 246, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  box-shadow: var(--glass-rim-subtle), var(--shadow-sm);
   position: relative;
 }
 
@@ -352,8 +416,8 @@
   left: 10%;
   right: 10%;
   height: 2px;
-  background: var(--gradient-brand);
-  box-shadow: 0 0 12px var(--accent-pink), 0 0 6px var(--accent-violet);
+  background: var(--text);
+  box-shadow: 0 0 8px var(--glass-border-hover);
   border-radius: 2px;
 }
 
@@ -460,8 +524,8 @@
     padding: 12px 0 26px;
   }
   .collections-hero h1 {
-    font-size: 34px;
-    letter-spacing: -1.2px;
+    font-size: clamp(32px, 7.5vw, 36px);
+    letter-spacing: normal;
   }
   .collections-hero > div > p:last-child {
     font-size: 12px;

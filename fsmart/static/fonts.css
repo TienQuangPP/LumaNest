@@ -3,3 +3,14 @@
 @font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:500;font-display:swap;src:url('/static/fonts/BeVietnamPro-Medium.ttf') format('truetype')}
 @font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:600;font-display:swap;src:url('/static/fonts/BeVietnamPro-SemiBold.ttf') format('truetype')}
 @font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:700;font-display:swap;src:url('/static/fonts/BeVietnamPro-Bold.ttf') format('truetype')}
+
+/* Playfair Display, bundled locally for editorial titles with complete Vietnamese diacritics support (SIL OFL 1.1) */
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400 900;font-display:swap;src:url('/static/fonts/PlayfairDisplay[wght].ttf') format('truetype-variations'), url('/static/fonts/PlayfairDisplay[wght].ttf') format('truetype')}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400;font-display:swap;src:url('/static/fonts/PlayfairDisplay[wght].ttf') format('truetype')}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:500;font-display:swap;src:url('/static/fonts/PlayfairDisplay[wght].ttf') format('truetype')}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:600;font-display:swap;src:url('/static/fonts/PlayfairDisplay[wght].ttf') format('truetype')}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:700;font-display:swap;src:url('/static/fonts/PlayfairDisplay[wght].ttf') format('truetype')}
+@font-face{font-family:'Playfair Display';font-style:italic;font-weight:400 900;font-display:swap;src:url('/static/fonts/PlayfairDisplay-Italic[wght].ttf') format('truetype-variations'), url('/static/fonts/PlayfairDisplay-Italic[wght].ttf') format('truetype')}
+@font-face{font-family:'Playfair Display';font-style:italic;font-weight:400;font-display:swap;src:url('/static/fonts/PlayfairDisplay-Italic[wght].ttf') format('truetype')}
+@font-face{font-family:'Playfair Display';font-style:italic;font-weight:600;font-display:swap;src:url('/static/fonts/PlayfairDisplay-Italic[wght].ttf') format('truetype')}
+@font-face{font-family:'Playfair Display';font-style:italic;font-weight:700;font-display:swap;src:url('/static/fonts/PlayfairDisplay-Italic[wght].ttf') format('truetype')}

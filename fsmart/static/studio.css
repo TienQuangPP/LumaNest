@@ -48,7 +48,12 @@
 
 #page-studio .studio-canvas {
   padding: 18px;
-  box-shadow: var(--shadow-sm), var(--glass-rim);
+  background: rgba(18, 22, 26, 0.42);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 #page-studio .canvas-top {
@@ -61,7 +66,7 @@
   background: var(--surface-stage);
   border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), inset 0 0 25px rgba(0, 0, 0, 0.4);
 }
 
@@ -86,7 +91,12 @@
   max-height: calc(100vh - 205px);
   overflow: auto;
   scrollbar-width: thin;
-  box-shadow: var(--shadow-sm), var(--glass-rim);
+  background: rgba(18, 22, 26, 0.42);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 #page-studio .controls-panel .panel-title {
@@ -538,13 +548,16 @@
   }
 }
 
-/* Built-in style library: a filterable grid of public-domain paintings. */
+/* Built-in style library: a filterable grid of public-domain paintings with iOS Frosted Glass */
 #page-studio .style-library {
   margin: 4px 0 12px;
-  padding: 12px;
-  border: 1px solid var(--glass-border);
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: var(--radius-lg);
-  background: var(--surface-2);
+  background: rgba(18, 22, 26, 0.42);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 #page-studio .style-library-head {
@@ -555,12 +568,12 @@
 }
 
 #page-studio .style-library-head b {
-  color: var(--text);
+  color: #ffffff;
   font-size: 13px;
 }
 
 #page-studio .style-library-head small {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.65);
   font-size: 12px;
 }
 
@@ -575,26 +588,29 @@
 
 #page-studio .library-chip {
   flex: none;
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: var(--radius-full);
-  background: transparent;
-  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
   font: inherit;
   font-size: 12px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   cursor: pointer;
   white-space: nowrap;
+  transition: all var(--dur-fast);
 }
 
 #page-studio .library-chip:hover {
-  border-color: var(--glass-border-hover);
-  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 #page-studio .library-chip.active {
-  background: var(--gradient-brand);
-  border-color: transparent;
-  color: var(--text-on-brand);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 #page-studio .style-library-grid {

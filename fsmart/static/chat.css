@@ -1,15 +1,4 @@
-/* LumaNest Assistant Chat — 3D Glass & Cosmic Motion Edition */
-
-@keyframes launcher-breathe {
-  0%, 100% {
-    transform: translateY(0);
-    box-shadow: 0 8px 28px -4px rgba(236, 72, 153, 0.5), 0 4px 14px -2px rgba(139, 92, 246, 0.45);
-  }
-  50% {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 40px -4px rgba(236, 72, 153, 0.75), 0 6px 22px -2px rgba(139, 92, 246, 0.65), 0 0 25px rgba(34, 211, 238, 0.4);
-  }
-}
+/* LumaNest Assistant Chat — iOS 18 Frosted Glassmorphism Edition */
 
 .chat-launcher {
   position: fixed;
@@ -19,70 +8,52 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: var(--radius-full);
-  background: var(--gradient-brand);
-  color: var(--text-on-brand);
-  padding: 13px 22px;
-  box-shadow: var(--shadow-button-3d);
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  color: #ffffff;
+  padding: 13px 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   font-weight: 600;
   font-size: 13.5px;
   cursor: pointer;
-  animation: launcher-breathe 4s ease-in-out infinite;
   transition: transform var(--dur-fast) var(--ease-spring),
               box-shadow var(--dur-fast) var(--ease-spring),
-              filter var(--dur-fast);
-}
-
-@keyframes launcher-halo {
-  0% {
-    filter: blur(8px) hue-rotate(0deg);
-  }
-  50% {
-    filter: blur(14px) hue-rotate(60deg);
-  }
-  100% {
-    filter: blur(8px) hue-rotate(0deg);
-  }
+              background var(--dur-fast),
+              border-color var(--dur-fast);
 }
 
 .chat-launcher::before {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border-radius: var(--radius-full);
-  background: var(--gradient-brand);
-  z-index: -1;
-  filter: blur(8px);
-  opacity: 0.7;
-  animation: launcher-halo 6s linear infinite;
-  pointer-events: none;
+  display: none !important;
 }
 
 .chat-launcher > span:first-child {
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1;
-  color: var(--accent-amber);
-  text-shadow: 0 0 12px rgba(245, 158, 11, 0.7);
+  color: #ffffff;
   transition: transform var(--dur-fast);
 }
 
 .chat-launcher:hover > span:first-child {
-  transform: rotate(35deg) scale(1.2);
+  transform: rotate(25deg) scale(1.15);
 }
 
 .chat-launcher[aria-expanded=true] {
-  filter: brightness(0.92);
-  box-shadow: var(--shadow-md);
-  animation: none;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
 .chat-launcher:hover {
-  transform: translateY(-4px) scale(1.03);
-  filter: brightness(1.12);
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.45);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-/* 3D Glassmorphism Chat Panel */
+/* iOS 18 Frosted Glassmorphism Chat Panel */
 @keyframes chat-3d-pop {
   from {
     opacity: 0;
@@ -102,12 +73,12 @@
   height: 620px;
   max-height: calc(100dvh - 114px);
   z-index: 43;
-  background: var(--glass-modal);
-  backdrop-filter: blur(28px) saturate(200%);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-xl);
-  box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.8), 0 0 45px -5px rgba(139, 92, 246, 0.45), var(--glass-rim);
+  background: rgba(18, 22, 26, 0.55);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -125,14 +96,24 @@
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
-  border-bottom: 1px solid var(--glass-border);
-  background: var(--surface-2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
 .chat-mark {
   display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
   place-items: center;
   width: 38px;
   height: 38px;
@@ -229,11 +210,11 @@
 }
 
 .chat-message.user .chat-bubble {
-  background: var(--gradient-brand);
-  color: var(--text-on-brand);
+  background: #0066ff;
+  color: #ffffff;
   border-radius: var(--radius-lg) 4px var(--radius-lg) var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 6px 20px rgba(217, 70, 239, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 102, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .chat-message.error .chat-bubble {
@@ -350,23 +331,24 @@
   width: 36px;
   height: 36px;
   flex-shrink: 0;
-  background: var(--gradient-brand);
-  color: var(--text-on-brand);
-  border: 0;
-  border-radius: var(--radius-sm);
-  font-size: 18px;
+  background: #ffffff;
+  color: #0f1419;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-full);
+  font-size: 16px;
+  font-weight: 700;
   line-height: 1;
   display: grid;
   place-items: center;
-  box-shadow: 0 4px 14px rgba(217, 70, 239, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   cursor: pointer;
-  transition: transform var(--dur-fast), filter var(--dur-fast), box-shadow var(--dur-fast);
+  transition: transform var(--dur-fast), filter var(--dur-fast), box-shadow var(--dur-fast), background var(--dur-fast);
 }
 
 .chat-compose button:hover {
-  filter: brightness(1.12);
+  background: #f0f2f5;
   transform: scale(1.08);
-  box-shadow: 0 6px 18px rgba(217, 70, 239, 0.6);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
 }
 
 .chat-compose button:disabled {
@@ -571,10 +553,11 @@
 }
 
 .chat-modes button[aria-pressed=true] {
-  background: rgba(139, 92, 246, 0.16);
-  color: var(--accent-violet);
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-radius: var(--radius-full);
   font-weight: 600;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .chat-panel.settings-open .chat-modes {

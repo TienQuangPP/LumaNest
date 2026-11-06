@@ -52,6 +52,75 @@ def test_windows_release_needs_launcher(tmp_path, monkeypatch):
         package_release.build(windows=True)
 
 
+def test_ui_update_package_and_asset_integrity(tmp_path, monkeypatch):
+    monkeypatch.setattr(package_release, 'ROOT', tmp_path)
+    (tmp_path / 'VERSION').write_text('1.1.0')
+    (tmp_path / 'README.md').write_text('# F Smart Memories')
+
+    # Create UI assets
+    static_dir = tmp_path / 'fsmart' / 'static'
+    fonts_dir = static_dir / 'fonts'
+    illus_dir = static_dir / 'illustrations'
+    fonts_dir.mkdir(parents=True)
+    illus_dir.mkdir(parents=True)
+
+    (static_dir / 'index.html').write_text('<html>UI</html>')
+    (static_dir / 'style.css').write_text('body { color: red; }')
+    (static_dir / 'app.js').write_text('console.log("ok");')
+    (static_dir / 'fsmart-logo.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'mock')
+    (static_dir / 'favicon.ico').write_bytes(b'\x00\x00\x01\x00' + b'mock')
+    (static_dir / 'fsmart-cover.jpg').write_bytes(b'\xff\xd8\xff' + b'mock')
+    (fonts_dir / 'Font.ttf').write_bytes(b'\x00\x01\x00\x00' + b'font')
+    (illus_dir / 'icon.svg').write_text('<svg></svg>')
+
+    # Backend and launch scripts
+    (tmp_path / 'fsmart' / 'app.py').write_text('app = 1')
+    (tmp_path / 'scripts').mkdir()
+    (tmp_path / 'scripts' / 'launch.py').write_text('print("launch")')
+    (tmp_path / 'Chay-LumaNest.cmd').write_text('echo run')
+
+    # Stray personal image outside asset folders
+    (tmp_path / 'fsmart' / 'personal_photo.jpg').write_bytes(b'\xff\xd8\xff' + b'private')
+    (tmp_path / 'scripts' / 'selfie.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'private')
+
+    archives = package_release.build()
+    assert len(archives) == 2
+
+    # Check Full package (index 0)
+    with zipfile.ZipFile(archives[0]) as full_zip:
+        names = set(full_zip.namelist())
+        assert 'LumaNest/fsmart/static/fsmart-logo.png' in names
+        assert 'LumaNest/fsmart/static/favicon.ico' in names
+        assert 'LumaNest/fsmart/static/fsmart-cover.jpg' in names
+        assert 'LumaNest/fsmart/static/fonts/Font.ttf' in names
+        assert 'LumaNest/fsmart/static/illustrations/icon.svg' in names
+        assert 'LumaNest/fsmart/static/index.html' in names
+        assert 'LumaNest/Chay-LumaNest.cmd' in names
+        # Ensure stray personal photos outside assets were rejected
+        assert 'LumaNest/fsmart/personal_photo.jpg' not in names
+        assert 'LumaNest/scripts/selfie.png' not in names
+        assert full_zip.testzip() is None
+
+    # Check UI Update package (index 1)
+    with zipfile.ZipFile(archives[1]) as update_zip:
+        names = set(update_zip.namelist())
+        # Update package uses root-relative paths for seamless in-place extraction
+        assert 'fsmart/static/fsmart-logo.png' in names
+        assert 'fsmart/static/favicon.ico' in names
+        assert 'fsmart/static/fonts/Font.ttf' in names
+        assert 'fsmart/static/index.html' in names
+        assert 'fsmart/app.py' in names
+        assert 'scripts/launch.py' in names
+        assert 'Chay-LumaNest.cmd' in names
+        assert 'HUONG_DAN_CAP_NHAT.txt' in names
+        assert 'VERSION' in names
+        # Excludes tests, docs, and stray photos
+        assert not any(n.startswith('tests/') for n in names)
+        assert not any(n.startswith('docs/') for n in names)
+        assert 'fsmart/personal_photo.jpg' not in names
+        assert update_zip.testzip() is None
+
+
 def test_install_preserves_library_and_skips_demo_and_development_tools(tmp_path, monkeypatch):
     monkeypatch.setattr(bootstrap, 'ROOT', tmp_path)
     monkeypatch.chdir(tmp_path)

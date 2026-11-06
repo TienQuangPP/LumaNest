@@ -3,7 +3,7 @@
   const chat = {history: [], status: null, pending: false, opening: 0, mode: 'support', lastStylePrompt: ''};
   const suggestions = ['Nên chọn phong cách nào?', 'Tìm ảnh có mặt tôi thế nào?', 'App có dùng GPT để tạo ảnh không?'];
   const styleSuggestions = ['Màu ấm, nét cọ dày, giữ ảnh gốc khá rõ', 'Tranh ghép Mosaic, đậm 70%', 'Màu nước pastel xanh nhạt'];
-  const welcome = 'Chào bạn! Mình giúp bạn tìm ảnh, chọn phong cách và dùng LumaNest. Bạn muốn bắt đầu từ đâu?';
+  const welcome = 'Chào bạn! Mình giúp bạn tìm ảnh, chọn phong cách và dùng F Smart Memories. Bạn muốn bắt đầu từ đâu?';
 
   function normalizeGeminiKey(value) {
     let text=value.trim().replace(/^[\uFEFF\u200B\u2060]+|[\uFEFF\u200B\u2060]+$/g,'').trim();
@@ -68,7 +68,7 @@
     chat.history = [];
     $('chat-messages').replaceChildren();
     chat.lastStylePrompt = '';
-    message('assistant', chat.mode === 'style' ? 'Mô tả màu sắc, nét cọ hoặc chất liệu bạn muốn. Mình sẽ đưa đề xuất để bạn chọn ảnh và tạo tác phẩm. Ví dụ: “gam ấm, nét cọ dày, đậm 65%”.' : welcome, 'Trợ lý LumaNest');
+    message('assistant', chat.mode === 'style' ? 'Mô tả màu sắc, nét cọ hoặc chất liệu bạn muốn. Mình sẽ đưa đề xuất để bạn chọn ảnh và tạo tác phẩm. Ví dụ: “gam ấm, nét cọ dày, đậm 65%”.' : welcome, 'Trợ lý F Smart Memories');
     renderSuggestions(chat.mode === 'style' ? styleSuggestions : suggestions);
   }
 
@@ -237,7 +237,7 @@
     if (chat.mode === 'style') chat.lastStylePrompt = text;
     message('user', text, 'Bạn');
     $('chat-input').value = '';
-    const pending = message('assistant', 'Đang trả lời…', 'Trợ lý LumaNest', 'pending');
+    const pending = message('assistant', 'Đang trả lời…', 'Trợ lý F Smart Memories', 'pending');
     try {
       let history = chat.history.slice(-10);
       while (history.reduce((sum, turn) => sum + turn.content.length, 0) > 20000) history = history.slice(2);
