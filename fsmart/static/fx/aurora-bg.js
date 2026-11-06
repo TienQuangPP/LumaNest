@@ -241,13 +241,15 @@
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     updatePalette(document.documentElement.dataset.theme);
 
-    // Fade in canvas smoothly
-    requestAnimationFrame(() => {
-      canvas.style.opacity = '1';
-    });
+    // Fade in canvas smoothly; the F Smart glass look uses a photo instead, so the canvas sleeps there.
+    const showCanvas = () => { canvas.style.opacity = glassSkin() ? '0' : '1'; };
+    requestAnimationFrame(showCanvas);
+    document.addEventListener('fsm:skin', () => { showCanvas(); if (!glassSkin()) wake(); });
+
+    const glassSkin = () => document.documentElement.dataset.skin === 'glass';
 
     function loop(now) {
-      if (document.hidden) {
+      if (document.hidden || glassSkin()) {
         rafId = null;
         return;
       }
@@ -352,9 +354,17 @@
     }
   };
 
-  if (document.readyState === 'complete') {
+  // Only start WebGL when an Aurora look is shown; the F Smart glass look never pays for it.
+  let started = false;
+  const startWhenAurora = () => {
+    if (started || document.documentElement.dataset.skin === 'glass') return;
+    started = true;
     startInit();
+  };
+  document.addEventListener('fsm:skin', startWhenAurora);
+  if (document.readyState === 'complete') {
+    startWhenAurora();
   } else {
-    window.addEventListener('load', startInit, { once: true });
+    window.addEventListener('load', startWhenAurora, { once: true });
   }
 })();
