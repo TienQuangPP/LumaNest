@@ -191,4 +191,34 @@ Giao diện Aurora v3 đã hoàn thành vượt mức mọi yêu cầu đề ra 
 
 ---
 
-*Báo cáo được khởi tạo tự động bởi Antigravity sau khi hoàn tất toàn bộ các giai đoạn 0–7, kiểm thử tự động toàn diện và chụp ảnh đối chứng.*
+*Mục 1–6 do Antigravity viết sau giai đoạn 0–7. Mục 7 do Claude bổ sung.
+
+---
+
+## 7. Phần Claude làm nốt và nghiệm thu chốt
+
+Antigravity hết hạn mức trước khi làm xong brief, nên Claude làm trực tiếp phần còn lại (commit 735bb83, file mới `fsmart/static/fx/delight.js` và `delight.css`):
+
+- **Icon SVG thống nhất:** các ký tự ▦ ◎ ⌕ ✳ ⌫ ↗ ☆ ★ ‹ › × ↓ ↑ ＋ ◐ ✓ còn sót trong nút và nhãn được vẽ lại bằng icon SVG. Ký tự gốc vẫn giữ (ẩn) để mã cũ lưu và khôi phục chữ nút không bị hỏng.
+- **Trình xem ảnh:**
+  - Phóng to bằng nhấp đúp, con lăn hoặc phím + - 0 (tối đa 4 lần).
+  - Kéo để di chuyển ảnh, vuốt trên màn cảm ứng để sang ảnh.
+  - Dải ảnh lân cận (filmstrip) ở dưới, bấm để nhảy tới ảnh đó.
+- **Hiệu ứng nhỏ:** sao bung khi bấm yêu thích, quầng sáng theo chuột (chỉ máy tính). Cả hai tắt khi người dùng chọn giảm chuyển động.
+- **Thu gọn thanh bên** trên màn hình rộng (242 → 84 px), có ghi nhớ giữa các lần mở.
+- **Nhãn bảo tàng:** mỗi bức trong thư viện 49 tranh hiện "Hoạ sĩ · năm".
+
+Chưa làm vì ít giá trị hoặc chưa có dữ liệu: biểu đồ nhỏ ở trang Hệ thống, hiệu ứng ảnh bay vào thùng rác, hoạt hình điểm mốc khuôn mặt, vẽ lại minh hoạ trạng thái trống.
+
+**Nghiệm thu chốt trên 735bb83:**
+
+- Kết quả chung: 36 đạt, 1 cần xem, 0 chưa đạt.
+- pytest: 226 pass. Console: 0 lỗi JS/CSP. Tương phản: 0 lỗi.
+- Giảm chuyển động: 0 lần vẽ/giây. JS tự viết thêm 30 KB (ngân sách 120 KB).
+- Mục "cần xem" là DOMContentLoaded 988 ms trong một lần đo. Đo lại 5 lần mỗi kiểu, bật và tắt `delight.js` đều dao động 86–729 ms (trung vị 128–439 ms). Bước quét icon chỉ tốn 0,1 ms. Đây là nhiễu do máy đang bận, không phải chậm thật.
+- Kiểm tra riêng tính năng mới:
+  - 91 icon, 0 ký tự lộ ra.
+  - Thanh bên thu gọn rồi mở lại đúng.
+  - 49 nhãn tranh.
+  - Filmstrip 13 ảnh, zoom scale(2) rồi trả về đúng.
+  - Hiệu ứng sao có, 0 lỗi.
