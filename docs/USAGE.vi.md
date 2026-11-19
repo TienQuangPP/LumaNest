@@ -14,7 +14,7 @@ Tìm mô tả: cài SigLIP 2, mở mục Ảnh (app tự chuẩn bị ảnh mớ
 
 Sáng tạo nhanh: chọn preset và mức 512 px. Tạo cả bộ hoặc các ảnh đã tích bằng nút tương ứng. Phong cách Van Gogh/ảnh tham chiếu dùng VGG19 tối ưu từng ảnh; **“Bước tối ưu 1/50 · 1 ảnh”** là 50 bước trên một ảnh. Chọn mức bước cao hơn sẽ chờ lâu hơn.
 
-Chat: chọn Qwen trên máy hoặc Gemini, nhập key ở cài đặt rồi **Lưu và kiểm tra**. Kiểm tra kết nối không chứng minh tài khoản có quota tạo ảnh. API ảnh có thể tính phí riêng. Chọn ảnh, mô tả phong cách, duyệt đề xuất và bấm tạo.
+Chat: chọn Qwen trên máy, Gemini, OpenAI hoặc API tương thích, nhập key ở cài đặt rồi **Lưu và kiểm tra**. Với model API, bấm tạo sẽ gửi ảnh đang chọn (thu nhỏ tối đa 1536 px) tới nhà cung cấp để vẽ lại; dùng Qwen nếu muốn ảnh không rời máy. Kiểm tra kết nối không chứng minh tài khoản có quota tạo ảnh. API ảnh có thể tính phí riêng. Chọn ảnh, mô tả phong cách, duyệt đề xuất và bấm tạo.
 
 ## Phím tắt
 

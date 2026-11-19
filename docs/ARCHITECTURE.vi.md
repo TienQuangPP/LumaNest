@@ -24,9 +24,9 @@ FastAPI cung cấp API và static frontend. SQLite lưu metadata, embedding, tá
 
 MTCNN phát hiện mặt → alignment 5 điểm → AdaFace tạo vector đã normalize → cosine retrieval. Kết quả là độ tương đồng, không phải xác suất hay danh tính đã xác nhận.
 
-Preset Fast Neural Style chạy một lượt, CPU dùng OpenVINO hoặc PyTorch. Style bất kỳ dùng VGG19 cố định backbone, Adam cập nhật pixel ảnh đầu ra. Mỗi lần cập nhật là một bước tối ưu, không phải một ảnh mới.
+Preset Fast Neural Style chạy một lượt, CPU dùng OpenVINO hoặc PyTorch. Style bất kỳ dùng VGG19 cố định backbone, L-BFGS cập nhật pixel ảnh đầu ra (256 px rồi 512 px). Mỗi lần cập nhật là một bước tối ưu, không phải một ảnh mới.
 
-Qwen chạy qua llama.cpp loopback, không có tool truy cập ảnh/filesystem. Gemini/OpenAI chỉ nhận văn bản sau khi người dùng chọn nguồn. Công thức được kiểm tra schema trước khi tạo; API ảnh chỉ tạo tham chiếu từ văn bản, ảnh nguồn vẫn được NST cục bộ.
+Qwen chạy qua llama.cpp loopback, không có tool truy cập ảnh/filesystem. Gemini, OpenAI và API tương thích nhận văn bản hội thoại; công thức được kiểm tra schema trước khi tạo. Với Qwen, ảnh nguồn được NST cục bộ và API (nếu có) chỉ tạo ảnh tham chiếu từ văn bản. Khi người dùng chọn model API, ảnh nguồn thu nhỏ tối đa 1536 px được gửi tới nhà cung cấp để model ảnh vẽ lại (chế độ edit), hoặc model vision mô tả cảnh rồi model ảnh vẽ lại (chế độ redraw).
 
 ## Cấu trúc
 
