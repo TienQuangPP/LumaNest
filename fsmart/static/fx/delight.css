@@ -1,0 +1,81 @@
+/* LumaNest Aurora v3 · finishing touches (pairs with fx/delight.js). Tokens only, no hard-coded brand hex. */
+/* Unlayered on purpose: style.css and viewer.css are unlayered, and layered rules would lose to them. */
+/* Icons drawn in place of text glyphs; the glyph itself stays for scripts but is not shown or read. */
+.glyph-src { display: none; }
+.glyph-icon { width: 1.05em; height: 1.05em; vertical-align: -0.16em; flex-shrink: 0; }
+button > .glyph-icon:first-child, a > .glyph-icon:first-child, label > .glyph-icon:first-child { margin-right: 0.12em; }
+
+/* Lightbox zoom & pan */
+.lightbox-image-stage { touch-action: pan-y; overflow: hidden; }
+.lightbox-image-stage > img { transform-origin: center center; transition: transform var(--dur-fast) var(--ease-spring); will-change: transform; }
+.lightbox-image-stage > img.is-zoomed { cursor: grab; transition: none; touch-action: none; }
+.lightbox-image-stage > img.is-zoomed:active { cursor: grabbing; }
+
+/* Filmstrip of nearby photos */
+.lightbox-filmstrip {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  display: flex; gap: 6px; max-width: min(92%, 760px); overflow-x: auto; padding: 6px;
+  border-radius: var(--radius-md); background: var(--scrim); border: 1px solid var(--glass-border);
+  scrollbar-width: none; z-index: 3;
+}
+.lightbox-filmstrip::-webkit-scrollbar { display: none; }
+.lightbox-filmstrip[hidden] { display: none; }
+.filmstrip-item {
+  flex: 0 0 auto; width: 52px; height: 40px; padding: 0; border-radius: 8px; overflow: hidden;
+  border: 2px solid transparent; background: var(--surface-2); opacity: 0.62; cursor: pointer;
+  transition: opacity var(--dur-fast), transform var(--dur-fast) var(--ease-spring), border-color var(--dur-fast);
+}
+.filmstrip-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.filmstrip-item:hover, .filmstrip-item:focus-visible { opacity: 1; transform: translateY(-2px); }
+.filmstrip-item.active { opacity: 1; border-color: var(--accent-violet); }
+
+/* Favourite burst */
+.fav-burst { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 60; }
+.fav-burst i {
+  position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--star-gold);
+  animation: fav-burst 0.7s var(--ease-spring) forwards;
+}
+@keyframes fav-burst {
+  from { transform: rotate(var(--a)) translateY(0) scale(1); opacity: 1; }
+  to { transform: rotate(var(--a)) translateY(-26px) scale(0.2); opacity: 0; }
+}
+
+/* Soft cursor glow behind content (desktop mouse only) */
+.cursor-glow {
+  position: fixed; left: -180px; top: -180px; width: 360px; height: 360px; border-radius: 50%;
+  pointer-events: none; z-index: -1; opacity: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-violet) 16%, transparent) 0%, transparent 68%);
+  transition: opacity 0.4s;
+}
+.cursor-glow.visible { opacity: 1; }
+:root[data-theme="light"] .cursor-glow {
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent-violet) 9%, transparent) 0%, transparent 68%);
+}
+
+/* Collapsible sidebar (wide screens only) */
+.sidebar-toggle { display: none; }
+@media (min-width: 901px) {
+  .sidebar-toggle { display: inline-flex; align-self: flex-end; margin: -8px -6px 6px 0; }
+  .sidebar, .workspace { transition: width var(--dur-base) var(--ease-spring), margin-left var(--dur-base) var(--ease-spring), padding var(--dur-base); }
+  :root.sidebar-collapsed .sidebar { width: 84px; padding-left: 14px; padding-right: 14px; align-items: center; }
+  :root.sidebar-collapsed .workspace { margin-left: 84px; }
+  :root.sidebar-collapsed .sidebar-toggle { align-self: center; margin: 0 0 10px; }
+  :root.sidebar-collapsed .brand > span,
+  :root.sidebar-collapsed .side-label:not(.album-heading),
+  :root.sidebar-collapsed .album-list,
+  :root.sidebar-collapsed .sidebar-bottom p,
+  :root.sidebar-collapsed .sidebar-bottom small,
+  :root.sidebar-collapsed .nav-arrow { display: none; }
+  :root.sidebar-collapsed .album-heading { font-size: 0; justify-content: center; }
+  :root.sidebar-collapsed .nav-item { font-size: 0; justify-content: center; padding-left: 0; padding-right: 0; }
+  :root.sidebar-collapsed .nav-item .nav-icon { font-size: 16px; margin: 0; }
+}
+
+/* Museum labels under each painting in the style library */
+.library-card-meta { display: block; font-size: 11px; line-height: 1.35; color: var(--text-muted); margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-image-stage > img, .filmstrip-item, .sidebar, .workspace { transition: none; }
+  .fav-burst, .cursor-glow { display: none; }
+}

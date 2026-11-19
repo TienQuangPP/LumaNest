@@ -1,1 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="17" fill="#173f36"/><path d="M21 15v34h25v-8H29V15Z" fill="#f8f7f2"/><path d="m46 10 2.1 7.9L56 20l-7.9 2.1L46 30l-2.1-7.9L36 20l7.9-2.1Z" fill="#eca97e"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="ln-cosmos" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#1e1842"/>
+      <stop offset="45%" stop-color="#0f142d"/>
+      <stop offset="100%" stop-color="#060814"/>
+    </radialGradient>
+    <linearGradient id="ln-prismatic" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="35%" stop-color="#8b5cf6"/>
+      <stop offset="70%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="ln-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.25"/>
+    </linearGradient>
+    <filter id="ln-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base with Deep Cosmos Gradient -->
+  <rect width="64" height="64" rx="16" fill="url(#ln-cosmos)"/>
+  <!-- Prismatic Glass Inner Rim -->
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="15.25" fill="none" stroke="url(#ln-rim)" stroke-width="1.5"/>
+
+  <!-- Celestial Aperture / Luminous Nest Waves -->
+  <g filter="url(#ln-glow)">
+    <!-- Outer nested curve (Nest) -->
+    <path d="M16 28 C16 19 23 14 32 14 C41 14 48 19 48 28 C48 39 39 48 32 48 C22 48 16 39 16 28 Z" fill="none" stroke="url(#ln-prismatic)" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+    <!-- Geometric crystalline facet (Luma Prism) -->
+    <path d="M22 22 L42 22 L46 36 L32 45 L18 36 Z" fill="none" stroke="url(#ln-prismatic)" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Radiant light core -->
+    <circle cx="32" cy="30" r="3.5" fill="#ffffff"/>
+    <circle cx="32" cy="30" r="7" fill="none" stroke="#06b6d4" stroke-width="1.2" opacity="0.7"/>
+    <!-- North star spark -->
+    <path d="M32 17 L32.8 22 L37 23 L32.8 24 L32 29 L31.2 24 L27 23 L31.2 22 Z" fill="#fbbf24"/>
+  </g>
+</svg>

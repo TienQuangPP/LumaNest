@@ -9,6 +9,90 @@
   border-bottom: 1px solid var(--glass-border);
 }
 
+/* 3D Constellation Cluster Hero */
+.constellation-stage {
+  position: relative;
+  width: 140px;
+  height: 100px;
+  perspective: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.constellation-cluster {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  transform-style: preserve-3d;
+  transition: transform 0.25s var(--ease-spring);
+  will-change: transform;
+}
+
+.constellation-core {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: var(--accent-fuchsia);
+  text-shadow: 0 0 16px var(--accent-fuchsia), 0 0 32px var(--accent-violet);
+  transform: translateZ(24px);
+  animation: pulse-core 3s ease-in-out infinite;
+}
+
+@keyframes pulse-core {
+  0%, 100% { transform: translateZ(24px) scale(0.95); opacity: 0.85; }
+  50% { transform: translateZ(28px) scale(1.15); opacity: 1; }
+}
+
+.constellation-ring {
+  position: absolute;
+  inset: 5px;
+  border: 1px dashed rgba(217, 70, 239, 0.4);
+  border-radius: 50%;
+  transform: rotateX(65deg);
+  animation: spin-ring 12s linear infinite;
+}
+
+@keyframes spin-ring {
+  from { transform: rotateX(65deg) rotateZ(0deg); }
+  to { transform: rotateX(65deg) rotateZ(360deg); }
+}
+
+.constellation-node {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface-1);
+  border: 1.5px solid var(--accent-violet);
+  box-shadow: 0 0 12px var(--accent-violet);
+}
+
+.constellation-node.node-1 { top: 0; left: 15px; transform: translateZ(35px); }
+.constellation-node.node-2 { top: 18px; right: 2px; transform: translateZ(-20px); }
+.constellation-node.node-3 { bottom: 6px; left: 8px; transform: translateZ(15px); }
+.constellation-node.node-4 { bottom: 12px; right: 20px; transform: translateZ(40px); }
+
+@media (max-width: 768px) {
+  .constellation-stage {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .constellation-cluster,
+  .constellation-core,
+  .constellation-ring {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 .collections-hero h1 {
   font-size: 48px;
   letter-spacing: -1.5px;
@@ -257,11 +341,15 @@
 
 .collection-context > button {
   margin-right: auto;
+  font-weight: 500;
+  text-shadow: var(--context-shadow);
 }
 
 .collection-context label {
   color: var(--text-muted);
   font-size: 12.5px;
+  font-weight: 500;
+  text-shadow: var(--context-shadow);
 }
 
 .collection-context select {
@@ -328,6 +416,7 @@
   font-weight: 500;
   white-space: nowrap;
   transition: all var(--dur-fast);
+  text-shadow: var(--context-shadow);
 }
 
 .collection-tabs > button:hover {
@@ -337,12 +426,13 @@
 }
 
 .collection-tabs > button[aria-selected=true] {
-  color: var(--text-on-dark);
+  color: var(--tab-active-color);
   border-color: var(--accent-violet);
-  background: linear-gradient(180deg, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0.04) 100%);
+  background: var(--tab-active-bg);
   font-weight: 600;
-  box-shadow: 0 4px 16px -2px rgba(139, 92, 246, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  box-shadow: var(--tab-active-shadow);
   position: relative;
+  text-shadow: var(--context-shadow);
 }
 
 .collection-tabs > button[aria-selected=true]::after {

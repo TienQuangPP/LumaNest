@@ -15,7 +15,11 @@ function renderCollections(){
     const info=el('div','collection-card-info');info.append(el('h3','',album.name));
     info.append(el('p','',album.photo_count?`${album.indexed_count} ảnh đã xử lý · ${album.photo_count-album.indexed_count} chưa sẵn sàng`:'Bộ ảnh mới · thêm những tấm ảnh đầu tiên'));
     info.append(el('span','collection-card-open','Mở bộ ảnh ↗'));card.append(cover,info);
-    card.onclick=()=>chooseAlbum(album.id).catch(error=>toast(error.message,true));return card;
+    card.onclick=()=>{
+      if(album.cover_photo_id&&typeof extractAmbientColors==='function')extractAmbientColors(`/api/photos/${album.cover_photo_id}/image?thumbnail=true`);
+      chooseAlbum(album.id).catch(error=>toast(error.message,true));
+    };
+    return card;
   }));
   $('collections-empty').classList.toggle('hidden',visible.length>0);
   $('collections-empty-title').textContent=term?'Không tìm thấy bộ ảnh':'Tạo bộ ảnh đầu tiên';
@@ -75,3 +79,25 @@ if(localStorage.getItem('fsm-library-layout')!=='collections-v1'){
 }
 mountPhotoPicker($('studio-photo'));
 start().then(()=>Promise.all([refreshBatches(),refreshTrash()]));
+
+(()=>{
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const hero=document.querySelector('.collections-hero');
+  const cluster=document.getElementById('constellation-cluster');
+  if(!hero||!cluster) return;
+  let raf=null,rx=0,ry=0;
+  hero.addEventListener('pointermove',e=>{
+    const rect=hero.getBoundingClientRect();
+    const cx=(e.clientX-rect.left)/rect.width-0.5;
+    const cy=(e.clientY-rect.top)/rect.height-0.5;
+    rx=-cy*28;
+    ry=cx*28;
+    if(!raf){
+      raf=requestAnimationFrame(()=>{
+        cluster.style.transform=`rotateX(${rx}deg) rotateY(${ry}deg)`;
+        raf=null;
+      });
+    }
+  },{passive:true});
+  hero.addEventListener('pointerleave',()=>{cluster.style.transform='';});
+})();

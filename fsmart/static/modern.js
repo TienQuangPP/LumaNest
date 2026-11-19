@@ -58,6 +58,7 @@ async function toggleFavorite(photo,button){
 // Photos fade in the first time they scroll into view. The gallery re-renders often (favourites, indexing
 // progress), so a photo already shown in this collection never animates again.
 const shownPhotoIds=new Set(),reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
+const hasScrollTimeline=typeof CSS!=='undefined'&&CSS.supports&&CSS.supports('animation-timeline: view()');
 const revealObserver=new IntersectionObserver(entries=>{
   entries.filter(entry=>entry.isIntersecting).forEach((entry,index)=>{
     const card=entry.target;revealObserver.unobserve(card);card.style.setProperty('--reveal-index',index);
@@ -66,7 +67,7 @@ const revealObserver=new IntersectionObserver(entries=>{
     requestAnimationFrame(()=>card.classList.add('revealed'));
   });
 },{rootMargin:'0px 0px -40px 0px'});
-function revealCard(card,id){if(shownPhotoIds.has(id))return;shownPhotoIds.add(id);if(reduceMotion.matches)return;card.classList.add('reveal');revealObserver.observe(card);}
+function revealCard(card,id){if(shownPhotoIds.has(id))return;shownPhotoIds.add(id);if(reduceMotion.matches||hasScrollTimeline)return;card.classList.add('reveal');revealObserver.observe(card);}
 function showGallerySkeleton(){$('gallery').setAttribute('aria-busy','true');$('gallery').replaceChildren(...Array.from({length:8},()=>{const node=el('div','photo-skeleton');node.setAttribute('aria-hidden','true');return node;}));}
 async function refreshPhotos(append=false){
   const album=currentAlbum(),version=++photosRequestVersion;
@@ -138,8 +139,24 @@ function canLeaveMetadata(){return !metadataDirty||window.confirm('Thông tin ch
 async function openLightbox(id){
   if(lightbox.open&&!canLeaveMetadata())return;
   const version=++lightboxVersion;metadataDirty=false;lightboxPhoto=null;
-  if(!lightbox.open)lightbox.showModal();$('metadata-form').inert=true;$('lightbox-favorite').disabled=true;$('lightbox-create').disabled=true;$('lightbox-similar').disabled=true;
-  $('lightbox-name').textContent='Đang mở ảnh…';$('lightbox-image').removeAttribute('src');$('metadata-state').textContent='';
+  const card=document.querySelector(`.photo-card[data-photo="${id}"]`);
+  const thumbImg=card?.querySelector('.image-button img');
+  const doOpen=()=>{
+    if(!lightbox.open)lightbox.showModal();
+    $('metadata-form').inert=true;$('lightbox-favorite').disabled=true;$('lightbox-create').disabled=true;$('lightbox-similar').disabled=true;
+    $('lightbox-name').textContent='Đang mở ảnh…';$('lightbox-image').removeAttribute('src');$('metadata-state').textContent='';
+  };
+  if(!reduceMotion.matches && document.startViewTransition && thumbImg){
+    thumbImg.style.viewTransitionName='active-lightbox-view';
+    const transition=document.startViewTransition(()=>{
+      thumbImg.style.viewTransitionName='';
+      doOpen();
+      $('lightbox-image').style.viewTransitionName='active-lightbox-view';
+    });
+    transition.finished.finally(()=>{$('lightbox-image').style.viewTransitionName='';});
+  } else {
+    doOpen();
+  }
   try{
     const photo=await api(`/api/photos/${id}/metadata`);if(version!==lightboxVersion||!lightbox.open)return;
     lightboxPhoto=photo;const index=state.photos.findIndex(item=>item.id===id);
@@ -148,11 +165,28 @@ async function openLightbox(id){
     $('lightbox-detail').textContent=`${photo.width} × ${photo.height} px · ${photo.face_count} khuôn mặt`;
     $('photo-tags').value=photo.tags.join(', ');$('photo-notes').value=photo.notes;
     $('lightbox-download').href=`/api/photos/${id}/original`;updateLightboxStar();
+    extractAmbientColors(`/api/photos/${id}/image?thumbnail=true`);
     $('metadata-form').inert=false;$('lightbox-favorite').disabled=false;$('lightbox-create').disabled=false;$('lightbox-similar').disabled=false;
     $('lightbox-prev').disabled=index<=0;$('lightbox-next').disabled=index<0||index>=state.photos.length-1;
   }catch(error){$('lightbox-name').textContent='Chưa mở được ảnh';toast(error.message,true);}
 }
-function closeLightbox(){if(canLeaveMetadata()){++lightboxVersion;lightbox.close();}}
+function closeLightbox(){
+  if(!canLeaveMetadata())return;
+  ++lightboxVersion;
+  const card=document.querySelector(`.photo-card[data-photo="${lightboxPhoto?.id}"]`);
+  const thumbImg=card?.querySelector('.image-button img');
+  if(!reduceMotion.matches && document.startViewTransition && thumbImg){
+    $('lightbox-image').style.viewTransitionName='active-lightbox-view';
+    const transition=document.startViewTransition(()=>{
+      $('lightbox-image').style.viewTransitionName='';
+      lightbox.close();
+      thumbImg.style.viewTransitionName='active-lightbox-view';
+    });
+    transition.finished.finally(()=>{thumbImg.style.viewTransitionName='';});
+  } else {
+    lightbox.close();
+  }
+}
 $('lightbox-close').onclick=closeLightbox;lightbox.addEventListener('cancel',event=>{event.preventDefault();closeLightbox();});
 function stepPhoto(step){const index=state.photos.findIndex(photo=>photo.id===lightboxPhoto?.id);const next=state.photos[index+step];if(next)openLightbox(next.id);}
 $('lightbox-prev').onclick=()=>stepPhoto(-1);$('lightbox-next').onclick=()=>stepPhoto(1);
@@ -197,7 +231,7 @@ $('save-colour').onclick=()=>busy($('save-colour'),'Đang lưu…',async()=>{con
 const palette=el('dialog','command-palette');palette.id='command-palette';palette.setAttribute('aria-labelledby','command-title');
 palette.innerHTML=`<h2 id="command-title">Bạn muốn làm gì?</h2><label class="chat-sr-only" for="command-query">Tìm thao tác</label><input id="command-query" placeholder="Tìm ảnh, tạo bộ, sáng tạo…" autocomplete="off"><div id="command-results"></div><button id="command-close" class="text-button">Đóng · Esc</button>`;document.body.append(palette);
 const commandButton=el('button','command-launcher','⌕ Thao tác · Ctrl K');commandButton.setAttribute('aria-label','Mở tìm thao tác');document.querySelector('.topbar-right').prepend(commandButton);
-const commands=[['▦ Mở thư viện ảnh',()=>navigate('collections')],['＋ Tạo bộ ảnh',()=>showAlbumDialog()],['⌕ Tìm ảnh bằng mô tả',()=>{navigate('library');$('discovery-query').focus();}],['☆ Xem ảnh yêu thích',()=>{navigate('library');clearLibraryFilters();favoritesOnly=true;$('favorite-filter').setAttribute('aria-pressed','true');filterChanged();}],['✳ Mở phòng sáng tạo',()=>navigate('studio')],['⌕ Tìm khuôn mặt',()=>navigate('search')],['◎ Kiểm tra hệ thống',()=>navigate('system')],['↑ Thêm ảnh vào bộ đang mở',()=>{if(!currentAlbum())return showAlbumDialog();navigate('library');$('photo-files').click();}],['⌫ Mở thùng rác',()=>navigate('trash')],['✳ Hỏi trợ lý',()=>$('chat-launcher').click()],['◐ Đổi giao diện sáng/tối',toggleTheme]];
+const commands=[['▦ Mở thư viện ảnh',()=>navigate('collections')],['＋ Tạo bộ ảnh',()=>showAlbumDialog()],['⌕ Tìm ảnh bằng mô tả',()=>{navigate('library');$('discovery-query').focus();}],['☆ Xem ảnh yêu thích',()=>{navigate('library');clearLibraryFilters();favoritesOnly=true;$('favorite-filter').setAttribute('aria-pressed','true');filterChanged();}],['✳ Mở phòng sáng tạo',()=>navigate('studio')],['⌕ Tìm khuôn mặt',()=>navigate('search')],['◎ Kiểm tra hệ thống',()=>navigate('system')],['↑ Thêm ảnh vào bộ đang mở',()=>{if(!currentAlbum())return showAlbumDialog();navigate('library');$('photo-files').click();}],['⌫ Mở thùng rác',()=>navigate('trash')],['✳ Hỏi trợ lý',()=>$('chat-launcher').click()],['◐ Đổi giao diện (F Smart · Aurora tối · Aurora sáng)',toggleTheme]];
 // Accent-insensitive: "tao bo anh" finds "Tạo bộ ảnh", as most people type without diacritics.
 function renderCommands(){const q=collectionSearchKey($('command-query').value.trim());$('command-results').replaceChildren();const matches=commands.filter(([name])=>collectionSearchKey(name).includes(q));for(const [name,action] of matches){const button=el('button','command-option',name);button.onclick=()=>{palette.close();action();};$('command-results').append(button);}if(!matches.length)$('command-results').append(el('p','helper','Không có thao tác phù hợp. Thử từ khác, ví dụ: ảnh, tìm, tạo.'));}
 function openCommands(){if(document.querySelector('dialog[open]'))return;palette.showModal();$('command-query').value='';renderCommands();$('command-query').focus();}
@@ -205,3 +239,91 @@ commandButton.onclick=openCommands;$('command-close').onclick=()=>palette.close(
 $('command-query').onkeydown=event=>{if(event.key==='ArrowDown'){event.preventDefault();$('command-results').querySelector('button')?.focus();}if(event.key==='Enter'){event.preventDefault();$('command-results').querySelector('button')?.click();}};
 $('command-results').onkeydown=event=>{const options=[...$('command-results').querySelectorAll('button')],index=options.indexOf(document.activeElement);if(index<0||!['ArrowDown','ArrowUp'].includes(event.key))return;event.preventDefault();if(event.key==='ArrowUp'&&index===0)return $('command-query').focus();options[Math.min(options.length-1,Math.max(0,index+(event.key==='ArrowDown'?1:-1)))].focus();};
 document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openCommands();}});
+
+function extractAmbientColors(url){
+  if(!url||reduceMotion.matches)return;
+  const canvas=document.createElement('canvas');canvas.width=16;canvas.height=16;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const img=new Image();img.crossOrigin='anonymous';
+  img.onload=()=>{
+    try{
+      ctx.drawImage(img,0,0,16,16);
+      const data=ctx.getImageData(0,0,16,16).data;
+      const c1=[data[0]/255,data[1]/255,data[2]/255];
+      const c2=[data[60]/255,data[61]/255,data[62]/255];
+      const c3=[data[960]/255,data[961]/255,data[962]/255];
+      const c4=[data[1020]/255,data[1021]/255,data[1022]/255];
+      window.dispatchEvent(new CustomEvent('fsm:ambient-photo',{detail:[c1,c2,c3,c4]}));
+    }catch(_){}
+  };
+  img.src=url;
+}
+
+(()=>{
+  if(reduceMotion.matches)return;
+  let activeCard=null,rx=0,ry=0,raf=null;
+  document.addEventListener('pointermove',event=>{
+    const card=event.target.closest('#gallery .photo-card, #output-history .photo-card, .collections-grid .collection-card');
+    if(!card){
+      if(activeCard){activeCard.style.transform='';activeCard=null;}
+      return;
+    }
+    activeCard=card;
+    const rect=card.getBoundingClientRect();
+    rx=((event.clientX-rect.left)/rect.width-0.5);
+    ry=((event.clientY-rect.top)/rect.height-0.5);
+    if(!raf){
+      raf=requestAnimationFrame(()=>{
+        if(activeCard){
+          activeCard.style.transform=`perspective(800px) rotateY(${rx*7}deg) rotateX(${-ry*7}deg) translateY(-3px)`;
+          activeCard.style.setProperty('--spotlight-x', `${Math.round(((event.clientX-rect.left)/rect.width)*100)}%`);
+          activeCard.style.setProperty('--spotlight-y', `${Math.round(((event.clientY-rect.top)/rect.height)*100)}%`);
+        }
+        raf=null;
+      });
+    }
+  },{passive:true});
+  document.addEventListener('pointerleave',()=>{if(activeCard){activeCard.style.transform='';activeCard=null;}});
+})();
+
+(()=>{
+  if(reduceMotion.matches) return;
+  if(!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  let activeBtn=null, raf=null, targetX=0, targetY=0;
+  document.addEventListener('pointermove', event => {
+    const btn = event.target.closest('.button, .icon-button, .dialog-close, .text-button');
+    if(!btn){
+      if(activeBtn){
+        activeBtn.style.transform = '';
+        activeBtn = null;
+      }
+      return;
+    }
+    const rect = btn.getBoundingClientRect();
+    const bx = rect.left + rect.width / 2;
+    const by = rect.top + rect.height / 2;
+    const dist = Math.hypot(event.clientX - bx, event.clientY - by);
+    if(dist < 50){
+      activeBtn = btn;
+      targetX = (event.clientX - bx) * 0.26;
+      targetY = (event.clientY - by) * 0.26;
+      if(!raf){
+        raf = requestAnimationFrame(() => {
+          if(activeBtn){
+            activeBtn.style.transform = `translate(${targetX.toFixed(1)}px, ${targetY.toFixed(1)}px)`;
+          }
+          raf = null;
+        });
+      }
+    } else if(activeBtn === btn){
+      activeBtn.style.transform = '';
+      activeBtn = null;
+    }
+  }, { passive: true });
+  document.addEventListener('pointerleave', () => {
+    if(activeBtn){
+      activeBtn.style.transform = '';
+      activeBtn = null;
+    }
+  });
+})();

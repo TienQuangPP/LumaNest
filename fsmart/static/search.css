@@ -45,6 +45,11 @@
   perspective: 1200px;
 }
 
+#search-results .photo-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 280px;
+}
+
 .search-results-panel[aria-busy=true] .search-empty .empty-icon {
   animation: search-pulse 1s infinite alternate;
 }

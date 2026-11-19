@@ -13,8 +13,11 @@ FOLDERS = ('fsmart', 'scripts', 'tests', 'docs', 'desktop', '.github')
 FILES = ('README.md', 'THIRD_PARTY.md', 'SECURITY.md', 'VERSION', '.gitignore',
          '.gitattributes', 'requirements.txt', 'requirements-ml.txt', 'requirements-cpu.txt',
          'requirements-semantic.txt', 'requirements-dev.txt', 'requirements-lock.txt',
-         'run.ps1', 'setup.ps1', 'Chay-LumaNest.cmd', 'docs/assets/lumanest-cover.jpg')
-SUFFIXES = {'.py', '.js', '.css', '.html', '.svg', '.ico', '.ttf', '.md', '.json', '.txt', '.cs', '.ps1', '.cmd', '.yml'}
+         'run.ps1', 'setup.ps1', 'Chay-LumaNest.cmd', 'docs/assets/lumanest-cover.jpg',
+         # F Smart look: background photo and app icons (listed one by one so no other image can slip in)
+         'fsmart/static/fsmart-cover.jpg', 'fsmart/static/fsmart-icon-16.png',
+         'fsmart/static/fsmart-icon-32.png', 'fsmart/static/fsmart-icon-180.png')
+SUFFIXES = {'.py', '.js', '.css', '.html', '.svg', '.ico', '.ttf', '.woff2', '.md', '.json', '.txt', '.cs', '.ps1', '.cmd', '.yml'}
 SECRET = re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{60,}|AIza[A-Za-z0-9_-]{35}(?![A-Za-z0-9_-])')
 
 
@@ -29,7 +32,7 @@ def source_files(root=None):
 
 
 def validate_file(path):
-    if path.suffix not in {'.ico', '.jpg', '.ttf'} and SECRET.search(path.read_bytes()):
+    if path.suffix not in {'.ico', '.jpg', '.png', '.ttf', '.woff2'} and SECRET.search(path.read_bytes()):
         raise ValueError(f'Possible credential in {path.relative_to(ROOT)}; refusing to publish.')
 
 

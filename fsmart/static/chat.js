@@ -3,7 +3,7 @@
   const chat = {history: [], status: null, pending: false, opening: 0, mode: 'support', lastStylePrompt: ''};
   const suggestions = ['Nên chọn phong cách nào?', 'Tìm ảnh có mặt tôi thế nào?', 'App có dùng GPT để tạo ảnh không?'];
   const styleSuggestions = ['Màu ấm, nét cọ dày, giữ ảnh gốc khá rõ', 'Tranh ghép Mosaic, đậm 70%', 'Màu nước pastel xanh nhạt'];
-  const welcome = 'Chào bạn! Mình giúp bạn tìm ảnh, chọn phong cách và dùng LumaNest. Bạn muốn bắt đầu từ đâu?';
+  const welcome = 'Chào bạn! Mình giúp bạn tìm ảnh, chọn phong cách và dùng F Smart Memories. Bạn muốn bắt đầu từ đâu?';
 
   function normalizeGeminiKey(value) {
     let text=value.trim().replace(/^[\uFEFF\u200B\u2060]+|[\uFEFF\u200B\u2060]+$/g,'').trim();
@@ -68,7 +68,7 @@
     chat.history = [];
     $('chat-messages').replaceChildren();
     chat.lastStylePrompt = '';
-    message('assistant', chat.mode === 'style' ? 'Mô tả màu sắc, nét cọ hoặc chất liệu bạn muốn. Mình sẽ đưa đề xuất để bạn chọn ảnh và tạo tác phẩm. Ví dụ: “gam ấm, nét cọ dày, đậm 65%”.' : welcome, 'Trợ lý LumaNest');
+    message('assistant', chat.mode === 'style' ? 'Mô tả màu sắc, nét cọ hoặc chất liệu bạn muốn. Mình sẽ đưa đề xuất để bạn chọn ảnh và tạo tác phẩm. Ví dụ: “gam ấm, nét cọ dày, đậm 65%”.' : welcome, 'Trợ lý F Smart Memories');
     renderSuggestions(chat.mode === 'style' ? styleSuggestions : suggestions);
   }
 
@@ -83,8 +83,22 @@
     }
   }
 
+  function setOrbState(state) {
+    const launcher = $('chat-launcher');
+    if (!launcher) return;
+    launcher.classList.remove('is-thinking', 'is-painting', 'is-idle');
+    launcher.classList.add(`is-${state}`);
+    launcher.dataset.orbState = state;
+  }
+
+  window.addEventListener('fsm:painting', (e) => setOrbState(e.detail ? 'painting' : 'idle'));
+  window.addEventListener('fsm:thinking', (e) => setOrbState(e.detail ? 'thinking' : 'idle'));
+
   function setPending(value) {
     chat.pending = value;
+    if (!value) {
+      setOrbState('idle');
+    }
     $('chat-send').disabled = value;
     $('chat-new').disabled = value;
     $('chat-mode-support').disabled = value;
@@ -155,6 +169,7 @@
       const photo = findPhotoById(select.value);
       if (!photo) { status.textContent = 'Chọn một ảnh trong danh sách trước. Nếu chưa có ảnh, thêm ảnh vào Thư viện.'; return; }
       setPending(true);
+      setOrbState('painting');
       status.textContent = redraw ? `${plan.api_label||providerName} đang xem ảnh rồi vẽ lại bằng ${plan.image_model}, thường 20–90 giây…` : plan.direct ? `Đang gửi ảnh tới ${plan.api_label||providerName} · ${plan.image_model}. Model API đang vẽ lại, thường 10–60 giây…` : plan.engine === 'reference' ? 'Đang tạo ảnh phong cách rồi chuyển style. Có thể mất vài phút.' : 'Đang tạo tác phẩm bằng model NST…';
       try {
         const result = await createFromStyleRecipe(plan, photo);
@@ -234,10 +249,11 @@
       return;
     }
     setPending(true);
+    setOrbState('thinking');
     if (chat.mode === 'style') chat.lastStylePrompt = text;
     message('user', text, 'Bạn');
     $('chat-input').value = '';
-    const pending = message('assistant', 'Đang trả lời…', 'Trợ lý LumaNest', 'pending');
+    const pending = message('assistant', 'Đang trả lời…', 'Trợ lý F Smart Memories', 'pending');
     try {
       let history = chat.history.slice(-10);
       while (history.reduce((sum, turn) => sum + turn.content.length, 0) > 20000) history = history.slice(2);

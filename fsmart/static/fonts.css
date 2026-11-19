@@ -1,5 +1,9 @@
-/* Be Vietnam Pro, bundled so the app stays offline (SIL OFL 1.1, see fonts/OFL.txt). Only the weights the UI uses. */
-@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:400;font-display:swap;src:url('/static/fonts/BeVietnamPro-Regular.ttf') format('truetype')}
-@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:500;font-display:swap;src:url('/static/fonts/BeVietnamPro-Medium.ttf') format('truetype')}
-@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:600;font-display:swap;src:url('/static/fonts/BeVietnamPro-SemiBold.ttf') format('truetype')}
-@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:700;font-display:swap;src:url('/static/fonts/BeVietnamPro-Bold.ttf') format('truetype')}
+/* Be Vietnam Pro, bundled so the app stays offline (SIL OFL 1.1, see fonts/OFL.txt). WOFF2 subsetted under 145 KB total. */
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:400;font-display:swap;src:url('/static/fonts/BeVietnamPro-Regular.woff2') format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:500;font-display:swap;src:url('/static/fonts/BeVietnamPro-Medium.woff2') format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:600;font-display:swap;src:url('/static/fonts/BeVietnamPro-SemiBold.woff2') format('woff2')}
+@font-face{font-family:'Be Vietnam Pro';font-style:normal;font-weight:700;font-display:swap;src:url('/static/fonts/BeVietnamPro-Bold.woff2') format('woff2')}
+
+/* Playfair Display for editorial titles in the F Smart look (SIL OFL 1.1), subset to Latin + Vietnamese. Only downloaded when that look uses it. */
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400 900;font-display:swap;src:url('/static/fonts/PlayfairDisplay.woff2') format('woff2')}
+@font-face{font-family:'Playfair Display';font-style:italic;font-weight:400 900;font-display:swap;src:url('/static/fonts/PlayfairDisplay-Italic.woff2') format('woff2')}
