@@ -23,7 +23,7 @@ EXE là trình mở/cài ứng dụng Windows; Python và model được cài ri
 - **Phong cách riêng:** ảnh tham chiếu → VGG19 tối ưu 50/150/300 bước cho từng ảnh; có tranh Van Gogh public domain từ The Met. Số bước không phải số ảnh.
 - **Màu ảnh:** Cinema, Soft film, Noir, Nordic, Golden hour.
 - **Chủ thể:** SAM 2.1 chọn vùng bằng điểm; PNG trong suốt, nền mờ hoặc nền nghệ thuật.
-- **Trợ lý:** Qwen 3 trên máy hoặc Gemini API; hiểu mô tả phong cách và lập đề xuất. OpenAI là tùy chọn.
+- **Trợ lý:** Qwen 3 trên máy, Gemini, OpenAI hoặc API tương thích OpenAI (VietAPI, ChatGPT, Claude… qua gateway); hiểu mô tả phong cách và lập đề xuất. Với Qwen, ảnh được vẽ trên máy; với model API, chính model ảnh của nhà cung cấp vẽ lại ảnh.
 - **Bảo quản:** thùng rác/khôi phục, tải nguồn, checksum, hàng đợi và kiểm tra toàn vẹn.
 
 Ảnh JPG/PNG/WebP tối đa **20 MB/file**, không áp trần megapixel; giới hạn RAM/codec vẫn tồn tại. Nguồn upload được giữ nguyên byte, thumbnail tạo riêng. Preset giữ tỉ lệ; VGG19 xử lý cạnh dài tối đa 512 px và chậm hơn preset.
@@ -43,7 +43,7 @@ Cài đặt chỉ lấy thư viện từ PyPI/PyTorch và model upstream đượ
 
 `runtime/` giữ ảnh, embedding, album và tác phẩm; `weights/` giữ model; `.venv/` giữ môi trường Python. Cả ba ở máy của bạn, nằm ngoài Git và gói phát hành. Sao lưu nguyên `runtime/` khi ứng dụng đã dừng; giữ `weights/` để tránh tải lại.
 
-Nhận diện, tìm ảnh và NST chạy trên máy. Khi chọn Gemini/OpenAI, chỉ văn bản hội thoại được gửi; API tạo ảnh tham chiếu chỉ chạy sau thao tác tạo rõ ràng. Key nhập trong app chỉ giữ trong RAM server, tắt server phải nhập lại. Phí và hạn mức do nhà cung cấp API quy định.
+Nhận diện khuôn mặt, tìm ảnh, tách chủ thể và NST chạy trên máy. Khi trò chuyện với Gemini, OpenAI hoặc API tương thích, chỉ văn bản hội thoại được gửi. **Khi chọn một model API để vẽ ảnh và bấm tạo, ảnh đang chọn được thu nhỏ còn cạnh dài tối đa 1536 px rồi gửi tới nhà cung cấp đó** để model ảnh của họ vẽ lại. Với gateway không có endpoint sửa ảnh, model vision của gateway đọc ảnh để mô tả cảnh, rồi model ảnh vẽ lại từ mô tả. Muốn ảnh không rời máy, dùng Qwen trên máy (preset hoặc VGG19). Chính sách dữ liệu của nhà cung cấp áp dụng cho ảnh đã gửi. Key nhập trong app chỉ giữ trong RAM server, tắt server phải nhập lại. Phí và hạn mức do nhà cung cấp API quy định.
 
 Ứng dụng dùng cho máy cá nhân, mặc định chỉ lắng nghe loopback, chưa có đăng nhập/phân quyền nhiều người. Không mở cổng trực tiếp ra Internet. Cosine không phải xác suất; chưa có đánh giá accuracy trên tập độc lập của bạn. Xem [SECURITY.md](SECURITY.md).
 
